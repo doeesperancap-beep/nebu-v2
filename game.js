@@ -4699,3 +4699,7 @@ function mostrarAviso(nova, key) {
 
   document.body.appendChild(aviso);
 }
+$('bVoz').onclick = () => {
+  if (ouvindo) pararVoz();
+  else iniciarVoz();
+};
