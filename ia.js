@@ -35,9 +35,9 @@ REGRAS DE COMPORTAMENTO:
 
 ⚠️ REGRAS DO FORMATO JSON (Obrigatório):
 1. Responda EXCLUSIVAMENTE um objeto JSON válido.
-2. O JSON deve ter as chaves: "fala" e "expressao".
-3. A "expressao" DEVE ser uma destas: "happy", "sad", "angry", "curious", "sleepy", "carinho", "surprised", "neutral".
-4. A "fala" deve ser natural, no máximo 3 frases. Use no máximo 1 emoji.`;
+2. O JSON deve ter as chaves: "fala" e "expressoes".
+3. A "expressoes" DEVE ser uma lista de 1 a 3 expressões em ordem (ex: ["curious", "happy"]). Escolha entre: "happy", "sad", "angry", "curious", "sleepy", "carinho", "surprised", "neutral".
+4. A "fala" deve ser natural, no máximo 3 frases. Use no máximo 1 emoji.
 }
 
 // Memória aumentada para ela lembrar mais do papo
@@ -82,7 +82,22 @@ async function chamarIA(textoUsuario) {
 function aplicarResposta(resp) {
   if (!resp || !resp.fala) return;
   
-  // O rosto fica pelo tempo da fala! (Mínimo 4 segundos)
-  const tempoRosto = Math.max(4000, resp.fala.length * 90); 
-  set(resp.expressao, tempoRosto, resp.fala);
+  const validas = ['neutral','happy','sad','angry','curious','sleepy','carinho','surprised','sick','bored','dance'];
+  
+  // Pega a lista de expressões que a IA mandou, ou usa 'neutral' se ela falhar
+  let lista = resp.expressoes || [resp.expressao] || ['neutral'];
+  lista = lista.filter(e => validas.includes(e));
+  if (lista.length === 0) lista = ['neutral'];
+
+  // Calcula o tempo total que o balão vai ficar na tela
+  const tempoTotal = Math.max(4000, resp.fala.length * 90); 
+  const tempoPorRosto = tempoTotal / lista.length;
+
+  // Vai trocando o rosto no decorrer da fala!
+  lista.forEach((expressao, index) => {
+    setTimeout(() => {
+      // Na primeira expressão, mostra o texto. Nas outras, só troca o rosto.
+      set(expressao, tempoPorRosto, index === 0 ? resp.fala : '');
+    }, index * tempoPorRosto);
+  });
 }
