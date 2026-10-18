@@ -58,9 +58,9 @@ async function chamarIA(textoUsuario) {
     
     // 👇 A MÁGICA ACONTECE AQUI: Se der erro, mostra o erro de verdade!
     if (dados.erro) {
-      return { fala: `Erro do Groq: ${dados.erro.slice(0, 50)}`, expressao: 'sad', acao: null };
-    }
-
+  console.error('ERRO COMPLETO:', dados.erro);
+  return { fala: String(dados.erro).slice(0, 200), expressao: 'sad', acao: null };
+}
     let obj;
     try { 
       obj = JSON.parse(dados.texto); 
