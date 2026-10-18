@@ -1,0 +1,2717 @@
+/* ============================================================
+   NÉBULA — style.css
+   Seções: variáveis | reset | rosto | expressões | UI | animações
+   ============================================================ */
+
+/* ---------- Variáveis ---------- */
+:root {
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  --eye: #f7d9e4;
+  --ew: min(24vw, 36vh);
+}
+
+/* ---------- Reset ---------- */
+html, body {
+  height: 100%; margin: 0;
+  background: #000; color: #eee;
+  font-family: system-ui, sans-serif;
+  overflow: hidden;
+  touch-action: none;
+  user-select: none; -webkit-user-select: none;
+}
+
+/* ---------- Rosto ---------- */
+#screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+#face { position: relative; display: flex; flex-direction: column; align-items: center; gap: calc(var(--ew) * .22); }
+#eyes { position: relative; display: flex; gap: 14%; transition: transform .25s; }
+#mouth { height: calc(var(--ew) * .4); display: flex; justify-content: center; }
+
+/* ---------- Olhos ---------- */
+.eye {
+  position: relative;
+  width: var(--ew); height: calc(var(--ew) * 1.15);
+  background-color: var(--eye);
+  background-image: radial-gradient(circle at 30% 26%, #fff 0 8%, transparent 9%);
+  border-radius: 50%; overflow: hidden;
+  transition: all .25s;
+  transform: scaleY(var(--blink, 1));
+}
+.eye::before {
+  content: ""; position: absolute;
+  left: -30%; width: 160%; top: -5%;
+  height: var(--lt, 0%); background: #000;
+  transform: rotate(calc(var(--lr, 0deg) * var(--s)));
+  transform-origin: center top; transition: all .25s;
+}
+.eye.l { --s: 1; }
+.eye.r { --s: -1; }
+.eye::after {
+  content: ""; position: absolute;
+  left: -20%; width: 140%; height: 100%;
+  top: var(--ht, 110%); background: #000;
+  border-radius: 50%; transition: all .25s;
+}
+
+/* ---------- Boca ---------- */
+#mouth::before { content: ""; display: none; }
+body[data-m=happy]  #mouth::before,
+body[data-m=carinho] #mouth::before {
+  display: block; width: calc(var(--ew) * .5); height: calc(var(--ew) * .2);
+  border-bottom: 5px solid var(--eye); border-radius: 0 0 50% 50%;
+}
+body[data-m=angry] #mouth::before {
+  display: block; width: calc(var(--ew) * .18); height: calc(var(--ew) * .18);
+  border-left: 5px solid #ffb3b3; border-top: 5px solid #ffb3b3;
+  transform: rotate(45deg); margin-top: 8px;
+}
+body[data-m=sad] #mouth::before {
+  display: block; width: calc(var(--ew) * .3); height: calc(var(--ew) * .14);
+  border-top: 5px solid #b9c9ff; border-radius: 50% 50% 0 0; margin-top: 8px;
+}
+body[data-m=cry] #mouth::before {
+  display: block; width: calc(var(--ew) * .5); height: calc(var(--ew) * .3);
+  background: #8fd3ff; border-radius: 6px 6px 50% 50%;
+}
+body[data-m=curious] #mouth::before,
+body[data-m=surprised] #mouth::before {
+  display: block; width: calc(var(--ew) * .14); height: calc(var(--ew) * .14);
+  border: 4px solid var(--eye); border-radius: 50%;
+}
+
+/* ---------- Enfeites ---------- */
+#sym {
+  position: absolute; left: 50%; top: -48%;
+  transform: translateX(-50%);
+  font-size: calc(var(--ew) * .5);
+  display: none; font-style: normal;
+}
+body[data-m=angry] #sym { display: block; }
+
+.bl {
+  position: absolute; bottom: -14%;
+  width: calc(var(--ew) * .5); height: calc(var(--ew) * .2);
+  background: #ff8fb3; border-radius: 50%;
+  opacity: 0; transition: opacity .3s;
+}
+.bl.a { left: -8%; }
+.bl.b { right: -8%; }
+body[data-m=happy] .bl, body[data-m=carinho] .bl { opacity: .55; }
+
+#acc { display: none; position: absolute; pointer-events: none; font-style: normal; }
+
+/* ---------- Expressões ---------- */
+body[data-m=happy] .eye  { --ht: 52%; }
+body[data-m=angry] .eye  { --lt: 55%; --lr: 24deg; background-color: #ffb3b3; }
+body[data-m=sad] .eye,
+body[data-m=cry]  .eye   { --lt: 50%; --lr: -22deg; background-color: #b9c9ff; }
+body[data-m=cry] .eye    { --lt: 58%; }
+body[data-m=sleepy] .eye { --lt: 62%; }
+body[data-m=curious] .eye { transform: scale(1.1); }
+body[data-m=scared] .eye  { transform: scale(.85); background-color: #e8e4ff; }
+body[data-m=surprised] .eye { transform: scale(1.18); }
+body[data-m=bored] .eye  { --lt: 40%; }
+body[data-m=sick] .eye   { --lt: 48%; background-color: #cfe8d0; }
+body[data-m=dance] .eye  { --ht: 52%; }
+body[data-m=tickle] .eye { --ht: 52%; }
+body[data-m=curious] #eyes { animation: around 2.4s ease-in-out infinite; }
+body[data-m=scared] #eyes  { animation: trem .1s infinite; }
+body[data-m=carinho] .eye  {
+  background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  font-size: var(--ew); animation: beat .6s infinite;
+}
+body[data-m=carinho] .eye::before,
+body[data-m=carinho] .eye::after,
+body[data-m=dizzy]   .eye::before,
+body[data-m=dizzy]   .eye::after { display: none; }
+body[data-m=dizzy] .eye {
+  animation: spin .5s linear infinite;
+  background: repeating-radial-gradient(circle, #f7d9e4 0 6px, #000 6px 12px);
+}
+#eyes.wig { animation: wig .15s infinite; }
+
+/* ---------- UI ---------- */
+#bubble {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 18px);
+  left: 0; right: 0; text-align: center;
+  font-size: 17px; opacity: 0; transition: opacity .4s;
+  pointer-events: none;
+}
+#bubble.on { opacity: .85; }
+
+#bar {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
+  left: 0; right: 0;
+  display: flex; justify-content: center; gap: 8px;
+}
+#bar button {
+  background: #ffffff14; color: #fff; border: 0;
+  border-radius: 22px; padding: 10px 12px; font-size: 15px;
+}
+
+#estado, #panel {
+  position: fixed; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  background: #1b1824f2; border-radius: 20px;
+  padding: 18px 22px; width: min(78vw, 300px);
+  display: none; z-index: 9;
+}
+#estado.on, #panel.on { display: block; }
+#panel { width: min(82vw, 320px); max-height: 80vh; overflow: auto; }
+#panel h3 { margin: 0 0 6px; font-size: 18px; }
+#panel button {
+  display: block; width: 100%; margin: 8px 0;
+  background: #ffffff1a; color: #fff; border: 0;
+  border-radius: 14px; padding: 12px; font-size: 17px;
+}
+.st { display: flex; align-items: center; gap: 10px; margin: 10px 0; font-size: 15px; }
+.st i { flex: 1; height: 10px; background: #333; border-radius: 6px; overflow: hidden; }
+.st i b { display: block; height: 100%; background: #f4a6c6; border-radius: 6px; }
+
+/* ---------- Corações ---------- */
+.heart {
+  position: fixed; font-size: 22px;
+  pointer-events: none;
+  animation: up 1.2s forwards;
+}
+@keyframes up { to { transform: translateY(-70px); opacity: 0; } }
+
+/* ---------- Animações ---------- */
+@keyframes wig    { 25% { transform: translateX(-8px) rotate(-4deg); } 75% { transform: translateX(8px) rotate(4deg); } }
+@keyframes around { 0%,100% { transform: translateX(-22px); } 50% { transform: translateX(22px); } }
+@keyframes trem   { 50% { transform: translate(3px,-2px); } }
+@keyframes beat   { 50% { transform: scale(1.15); } }
+@keyframes spin   { to  { transform: rotate(360deg); } }
+@keyframes hop    { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-26px) rotate(4deg); } }
+@keyframes sway   { 0%,100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+@keyframes posea  { 0%,60% { transform: rotate(0); } 70% { transform: rotate(-12deg) scale(1.1); } 85% { transform: rotate(10deg) scale(1.1); } 100% { transform: rotate(0); } }
+@keyframes shk    { 0%,100% { transform: translateX(-10px); } 50% { transform: translateX(10px); } }
+@keyframes crz {
+  0%   { transform: rotate(0); }
+  25%  { transform: translate(20px,-14px) rotate(25deg); }
+  50%  { transform: translate(-20px,8px) rotate(-30deg) scale(1.1); }
+  75%  { transform: translate(10px,-20px) rotate(360deg); }
+  100% { transform: rotate(360deg); }
+}
+@keyframes flt    { 0%,100% { transform: translateY(-8px); } 50% { transform: translateY(10px); } }
+
+/* ---------- Aviso de atualização ---------- */
+#aviso-atualizacao {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #f7d9e4;
+  color: #1b1824;
+  padding: 14px 22px;
+  border-radius: 24px;
+  font-size: 15px;
+  font-weight: 500;
+  z-index: 100;
+  cursor: pointer;
+  box-shadow: 0 6px 24px rgba(247, 217, 228, .5);
+  animation: pulse-aviso 1.6s ease-in-out infinite;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+@keyframes pulse-aviso {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  50%      { transform: translateX(-50%) scale(1.06); }
+}
+/* ---------- Animação de moeda ---------- */
+@keyframes moedaSobe {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(20px) scale(.8); }
+  20%  { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.1); }
+  80%  { opacity: 1; transform: translateX(-50%) translateY(-20px) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-40px) scale(.9); }
+}
+
+/* ---------- Cidade ---------- */
+#cidade {
+  position: fixed;
+  inset: 0;
+  background: #1a1520;
+  z-index: 20;
+  display: none;
+  overflow: hidden;
+}
+#cidade.on { display: block; }
+
+#cidadeMapa {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#cidadeNebo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90px;
+  height: 90px;
+  pointer-events: none;
+  z-index: 22;
+  filter: drop-shadow(0 6px 12px rgba(0,0,0,.4));
+}
+
+#cidadeBalao {
+  position: absolute;
+  top: 38%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  color: #1b1824;
+  padding: 10px 18px;
+  border-radius: 20px;
+  font-size: 15px;
+  font-weight: 500;
+  max-width: 80%;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0,0,0,.3);
+  opacity: 0;
+  transition: opacity .3s;
+  pointer-events: none;
+  z-index: 25;
+}
+#cidadeBalao.on { opacity: 1; }
+#cidadeBalao::after {
+  content: "";
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid #fff;
+}
+
+.predio {
+  position: absolute;
+  cursor: pointer;
+  border-radius: 12px;
+  transition: background .2s;
+  z-index: 21;
+  background: transparent;
+}
+.predio:active { background: rgba(255,255,255,.25); }
+
+#cidadeVoltar {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(27, 24, 36, .85);
+  color: #fff;
+  border: 0;
+  border-radius: 22px;
+  padding: 10px 18px;
+  font-size: 15px;
+  cursor: pointer;
+  z-index: 30;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
+@keyframes bounceIn {
+  0%   { transform: scale(0); }
+  50%  { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* ============ PRESENTE ============ */
+@keyframes presentePulsa {
+  0%, 100% { transform: translate(-50%, -50%) scale(1) rotate(-5deg); }
+  50%      { transform: translate(-50%, -50%) scale(1.15) rotate(5deg); }
+}
+/* ============================================================
+   DOCERIA (cozinha nova)
+   ============================================================ */
+
+#doceria {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: block;
+  overflow: hidden;
+  background: #f0e6dc;
+  font-family: system-ui, sans-serif;
+}
+
+/* ---------- TOPO ---------- */
+#doc-topo {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 10;
+  pointer-events: none;
+}
+#doc-topo > * { pointer-events: auto; }
+
+.doc-btn-topo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #e8d5f0;
+  color: #5d4f9e;
+  border: 0;
+  border-radius: 24px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(93, 79, 158, .15);
+  transition: transform .15s;
+}
+.doc-btn-topo:active { transform: scale(.95); }
+
+#doc-botoes-direita {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.doc-btn-roxo {
+  background: #d8c4ec;
+  color: #5d4f9e;
+}
+
+.doc-btn-verde {
+  background: #b8dfd0;
+  color: #2e6b52;
+}
+
+/* ---------- COZINHA (visual) ---------- */
+#doc-cozinha {
+  position: absolute;
+  inset: 0 0 45% 0;
+  background: #f5ebe0;
+}
+
+/* Parede de azulejo */
+#doc-parede {
+  position: absolute;
+  inset: 0 0 30% 0;
+  background-image:
+    linear-gradient(#ffffff60 2px, transparent 2px),
+    linear-gradient(90deg, #ffffff60 2px, transparent 2px);
+  background-size: 44px 44px;
+  background-color: #f9f1e8;
+}
+
+/* Prateleira */
+#doc-prateleira {
+  position: absolute;
+  top: 18%;
+  left: 38%;
+  width: 22%;
+  height: 8px;
+  background: #b8926a;
+  border-radius: 4px;
+  display: flex;
+  gap: 8px;
+  padding: 0 8px;
+}
+.doc-pote {
+  width: 22px;
+  height: 30px;
+  border-radius: 6px 6px 4px 4px;
+  margin-top: -30px;
+  box-shadow: inset 0 -4px 6px rgba(0,0,0,.08);
+}
+
+/* Quadro */
+#doc-quadro {
+  position: absolute;
+  top: 12%;
+  left: 20%;
+  width: 80px;
+  height: 90px;
+  background: #e8d5b8;
+  border: 4px solid #b8926a;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36px;
+  box-shadow: 0 4px 10px rgba(0,0,0,.1);
+}
+
+/* Geladeira */
+#doc-geladeira {
+  position: absolute;
+  bottom: 30%;
+  left: 4%;
+  width: 22%;
+  max-width: 120px;
+  height: 55%;
+  background: #c8b0e0;
+  border-radius: 14px 14px 8px 8px;
+  box-shadow: 0 8px 20px rgba(93, 79, 158, .2), inset -6px 0 12px rgba(0,0,0,.08);
+}
+.doc-geladeira-linha {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  height: 5px;
+  background: #a088c0;
+  border-radius: 3px;
+}
+.doc-geladeira-linha:nth-child(1) { top: 30%; }
+.doc-geladeira-linha:nth-child(2) { top: 65%; }
+
+/* Fogão */
+#doc-fogao {
+  position: absolute;
+  bottom: 30%;
+  right: 6%;
+  width: 26%;
+  max-width: 160px;
+  height: 40%;
+  background: #e8e0d8;
+  border-radius: 8px 8px 4px 4px;
+  box-shadow: 0 6px 16px rgba(0,0,0,.12);
+}
+.doc-fogao-topo {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  right: 8px;
+  height: 14px;
+  background: #4a4a52;
+  border-radius: 4px;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+}
+.doc-boca {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #2a2a30;
+  border: 2px solid #1a1a20;
+  margin-top: 8px;
+}
+.doc-fogao-porta {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  right: 8px;
+  height: 40%;
+  background: #3a3a42;
+  border-radius: 6px;
+  box-shadow: inset 0 4px 8px rgba(0,0,0,.4);
+}
+
+/* Coifa */
+#doc-coifa {
+  position: absolute;
+  top: 0;
+  right: 8%;
+  width: 22%;
+  max-width: 140px;
+  height: 14%;
+  background: #c8c8d0;
+  border-radius: 4px 4px 12px 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
+
+/* Luminária */
+#doc-luminaria {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 40px;
+  background: #4a4a52;
+}
+#doc-luminaria .doc-luz {
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 30px;
+  background: radial-gradient(ellipse at top, #fff5c8 0%, transparent 70%);
+  border-radius: 50%;
+  filter: blur(4px);
+}
+
+/* ---------- BANCADA DA FRENTE ---------- */
+#doc-bancada {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 45%;
+  background: linear-gradient(180deg, #e8c8a0 0%, #c9a878 100%);
+  border-top: 6px solid #b8926a;
+  overflow: hidden;
+}
+
+/* Toalha xadrez */
+#doc-toalha {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70%;
+  max-width: 400px;
+  height: 60%;
+  background-color: #f5e8f0;
+  background-image:
+    linear-gradient(45deg, #d8c4ec 25%, transparent 25%),
+    linear-gradient(-45deg, #d8c4ec 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d8c4ec 75%),
+    linear-gradient(-45deg, transparent 75%, #d8c4ec 75%),
+    linear-gradient(45deg, #b8dfd0 25%, transparent 25%),
+    linear-gradient(-45deg, #b8dfd0 25%, transparent 25%);
+  background-size: 30px 30px;
+  background-position: 0 0, 0 15px, 15px -15px, -15px 0px, 60px 0, 60px 15px;
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,.15);
+}
+
+/* Área onde aparece o conteúdo (livro, ingredientes, preparo) */
+#doc-bancada-conteudo {
+  position: absolute;
+  inset: 0;
+  padding: 16px;
+  overflow-y: auto;
+  z-index: 5;
+  box-sizing: border-box;
+}
+
+/* Tapete */
+#doc-tapete {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  max-width: 300px;
+  height: 40px;
+  background: repeating-linear-gradient(
+    90deg,
+    #f5c7d6 0, #f5c7d6 20px,
+    #d8c4ec 20px, #d8c4ec 40px,
+    #b8dfd0 40px, #b8dfd0 60px
+  );
+  border-radius: 8px;
+  opacity: .7;
+}
+/* ============================================================
+   LIVRO DE RECEITAS (dentro da bancada)
+   ============================================================ */
+
+#livro-header {
+  margin-bottom: 14px;
+  text-align: center;
+}
+#livro-header h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  color: #5d4f9e;
+  font-weight: 700;
+}
+#livro-header p {
+  margin: 0;
+  font-size: 13px;
+  color: #5d4f9e;
+  opacity: .65;
+}
+
+#livro-lista {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.livro-receita {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 2px solid #e8d5f0;
+  border-radius: 14px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: transform .15s, border-color .15s;
+  box-shadow: 0 2px 8px rgba(93, 79, 158, .08);
+}
+.livro-receita:active {
+  transform: scale(.96);
+}
+.livro-receita:hover {
+  border-color: #d8c4ec;
+}
+
+.livro-receita-emoji {
+  font-size: 28px;
+  flex-shrink: 0;
+}
+
+.livro-receita-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.livro-receita-nome {
+  font-size: 12px;
+  font-weight: 700;
+  color: #5d4f9e;
+  line-height: 1.2;
+  margin-bottom: 2px;
+  word-wrap: break-word;
+}
+
+.livro-receita-status {
+  font-size: 10px;
+  font-weight: 600;
+}
+.livro-receita-status.ok { color: #2e6b52; }
+.livro-receita-status.falta { color: #b8496b; }
+
+/* ---------- DETALHE DA RECEITA ---------- */
+#receita-detalhe {
+  text-align: center;
+}
+#receita-detalhe h2 {
+  margin: 0 0 4px;
+  font-size: 19px;
+  color: #5d4f9e;
+  font-weight: 700;
+}
+.receita-sub {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #5d4f9e;
+  opacity: .65;
+}
+
+/* Lista de ingredientes que faltam */
+.receita-falta-lista,
+.receita-ing-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.receita-falta-item,
+.receita-ing-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #5d4f9e;
+  box-shadow: 0 2px 6px rgba(93, 79, 158, .06);
+}
+
+.receita-falta-emoji,
+.receita-ing-item span:first-child {
+  font-size: 20px;
+}
+
+.receita-falta-nome,
+.receita-ing-item span:nth-child(2) {
+  flex: 1;
+  text-align: left;
+  font-weight: 600;
+}
+
+.receita-falta-qtd {
+  font-size: 11px;
+  color: #b8496b;
+  font-weight: 700;
+  background: #fbe0e8;
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
+.receita-ing-qtd {
+  font-size: 11px;
+  color: #2e6b52;
+  font-weight: 700;
+  background: #d8f0e0;
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
+/* Botões de ação dentro da bancada */
+.doc-btn-acao {
+  display: block;
+  width: 100%;
+  margin: 8px 0 0;
+  padding: 13px;
+  font-size: 15px;
+  font-weight: 700;
+  font-family: inherit;
+  border: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: transform .15s;
+}
+.doc-btn-acao:active {
+  transform: scale(.97);
+}
+
+.doc-btn-cinza {
+  background: #e8e0e8;
+  color: #5d4f9e;
+}
+.doc-btn-roxo {
+  background: #d8c4ec;
+  color: #5d4f9e;
+}
+.doc-btn-verde {
+  background: #b8dfd0;
+  color: #2e6b52;
+}
+/* ============================================================
+   COMPRAR INGREDIENTES (dentro da Doceria)
+   ============================================================ */
+
+#ing-header {
+  text-align: center;
+  margin-bottom: 14px;
+}
+#ing-header h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  color: #5d4f9e;
+  font-weight: 700;
+}
+#ing-header p {
+  margin: 0;
+  font-size: 13px;
+  color: #5d4f9e;
+  opacity: .65;
+}
+
+#ing-lista {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.ing-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 2px solid #e8d5f0;
+  border-radius: 14px;
+  padding: 8px 10px;
+  cursor: pointer;
+  transition: transform .15s, border-color .15s;
+  box-shadow: 0 2px 8px rgba(93, 79, 158, .08);
+  position: relative;
+}
+.ing-item:active {
+  transform: scale(.95);
+}
+.ing-item:hover {
+  border-color: #b8dfd0;
+}
+
+.ing-sem-moeda {
+  opacity: .45;
+}
+
+.ing-emoji {
+  font-size: 24px;
+  flex-shrink: 0;
+}
+
+.ing-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.ing-nome {
+  font-size: 11px;
+  font-weight: 700;
+  color: #5d4f9e;
+  line-height: 1.2;
+  margin-bottom: 1px;
+  word-wrap: break-word;
+}
+
+.ing-preco {
+  font-size: 10px;
+  color: #2e6b52;
+  font-weight: 600;
+}
+
+.ing-qtd {
+  font-size: 13px;
+  font-weight: 800;
+  color: #b8496b;
+  background: #fbe0e8;
+  padding: 2px 7px;
+  border-radius: 8px;
+  min-width: 22px;
+  text-align: center;
+}
+.ing-qtd:empty {
+  display: none;
+}
+
+/* ============================================================
+   TELA DE PREPARO (passo a passo)
+   ============================================================ */
+
+#prep-tela {
+  text-align: center;
+  padding: 4px 0;
+}
+
+#prep-topo h2 {
+  margin: 0 0 4px;
+  font-size: 18px;
+  color: #5d4f9e;
+  font-weight: 700;
+}
+#prep-topo p {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #5d4f9e;
+  opacity: .6;
+  font-weight: 600;
+}
+
+#prep-bolinhas {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.prep-bola {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #e8d5f0;
+  transition: background .3s, transform .3s;
+}
+.prep-bola.ok {
+  background: #b8dfd0;
+  transform: scale(1.15);
+}
+
+#prep-texto {
+  font-size: 15px;
+  color: #5d4f9e;
+  font-weight: 600;
+  margin: 0 0 20px;
+  min-height: 40px;
+  line-height: 1.4;
+  padding: 0 10px;
+}
+
+.prep-acao {
+  display: block;
+  margin: 0 auto;
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  border: 4px solid #d8c4ec;
+  background: #ffffff;
+  font-size: 54px;
+  cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+  box-shadow: 0 6px 20px rgba(93, 79, 158, .15);
+  font-family: inherit;
+  line-height: 1;
+  padding: 0;
+}
+.prep-acao:active {
+  transform: scale(.92);
+  box-shadow: 0 3px 10px rgba(93, 79, 158, .2);
+}
+.prep-acao:hover {
+  box-shadow: 0 8px 24px rgba(93, 79, 158, .25);
+}
+
+#prep-cancelar {
+  margin-top: 20px;
+  font-size: 13px;
+  padding: 10px;
+  opacity: .7;
+}
+
+/* ---------- FORNO ---------- */
+#forno-tela {
+  text-align: center;
+  padding: 20px 0;
+}
+#forno-emoji {
+  font-size: 80px;
+  margin-bottom: 12px;
+  display: inline-block;
+}
+#forno-emoji.pulse {
+  animation: pulse-aviso 1s ease-in-out infinite;
+}
+#forno-tela h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+  color: #5d4f9e;
+  font-weight: 700;
+}
+#forno-tela p {
+  margin: 0 0 18px;
+  font-size: 14px;
+  color: #5d4f9e;
+  opacity: .7;
+}
+/* ============================================================
+   MINIGAME DO FORNO (barra de tempo)
+   ============================================================ */
+
+#forno-barra-wrap {
+  margin: 20px auto;
+  width: 90%;
+  max-width: 320px;
+}
+
+#forno-barra {
+  position: relative;
+  width: 100%;
+  height: 32px;
+  background: #f5e8f0;
+  border: 3px solid #d8c4ec;
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow: inset 0 2px 6px rgba(93, 79, 158, .12);
+}
+
+#forno-barra-preenche {
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 0%;
+  background: linear-gradient(90deg, #f7d9e4 0%, #f9d71c 60%, #ff6b35 100%);
+  border-radius: 14px 0 0 14px;
+  transition: width .05s linear;
+}
+
+#forno-zona-boa {
+  position: absolute;
+  top: 0; bottom: 0;
+  background: rgba(123, 196, 127, .35);
+  border-left: 3px dashed #7bc47f;
+  border-right: 3px dashed #7bc47f;
+  pointer-events: none;
+}
+
+#btnTirarForno {
+  margin-top: 12px;
+  font-size: 16px;
+  padding: 14px;
+}
+
+/* ---------- Resultados do forno ---------- */
+#forno-emoji.queimado {
+  filter: grayscale(1) brightness(.6);
+  animation: trem .1s 6;
+}
+
+
+/* ============================================================
+   BIBLIOTECA (tela cheia, CSS puro — estilo da cozinha)
+   ============================================================ */
+
+#biblioteca {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: block;
+  overflow: hidden;
+  background: #d8c4e0;
+  font-family: system-ui, sans-serif;
+}
+
+/* ---------- TOPO (Sair / Loja) ---------- */
+#bib-topo {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  padding: 18px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 10;
+  pointer-events: none;
+}
+#bib-topo > * { pointer-events: auto; }
+
+.bib-btn-topo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #e8d5f0;
+  color: #7a5fa8;
+  border: 3px solid #f0d8ff;
+  border-radius: 30px;
+  padding: 10px 22px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(122, 95, 168, .25);
+  transition: transform .15s;
+  position: relative;
+}
+.bib-btn-topo:active { transform: scale(.95); }
+
+/* Estrelinhas decorativas nos botões */
+.bib-btn-topo::before,
+.bib-btn-topo::after {
+  content: "✦";
+  position: absolute;
+  font-size: 10px;
+  color: #f5d76e;
+  opacity: .9;
+}
+.bib-btn-topo::before { top: -4px; right: 14px; }
+.bib-btn-topo::after  { bottom: -4px; left: 14px; }
+
+.bib-btn-topo svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* ---------- PAREDE ---------- */
+#bib-parede {
+  position: absolute;
+  inset: 0 0 28% 0;
+  background: linear-gradient(180deg, #c8b0d8 0%, #b8a0cc 100%);
+  overflow: hidden;
+}
+
+/* Painéis verticais sutis */
+#bib-parede::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 46px,
+    rgba(255,255,255,.06) 46px,
+    rgba(255,255,255,.06) 48px
+  );
+}
+
+/* ---------- JANELA (esquerda) ---------- */
+#bib-janela {
+  position: absolute;
+  top: 12%;
+  left: 4%;
+  width: 20%;
+  max-width: 130px;
+  height: 55%;
+  background: linear-gradient(180deg, #f5e0c8 0%, #e8c8a0 100%);
+  border: 8px solid #f0e0d0;
+  border-radius: 60px 60px 8px 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.15),
+              inset 0 0 40px rgba(255, 240, 200, .5);
+  overflow: hidden;
+}
+/* Grade da janela */
+#bib-janela::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(#f0e0d0 4px, transparent 4px),
+    linear-gradient(90deg, #f0e0d0 4px, transparent 4px);
+  background-size: 100% 33%, 33% 100%;
+}
+/* Luz entrando */
+#bib-janela::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: -10%;
+  width: 200%;
+  height: 150%;
+  background: radial-gradient(ellipse at top left,
+    rgba(255, 240, 200, .55) 0%,
+    transparent 60%);
+  pointer-events: none;
+}
+
+/* ---------- QUADROS (direita) ---------- */
+.bib-quadro {
+  position: absolute;
+  right: 8%;
+  width: 50px;
+  height: 60px;
+  background: #f5f0e0;
+  border: 5px solid #d8b890;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+}
+.bib-quadro.q1 { top: 22%; }
+.bib-quadro.q2 { top: 42%; }
+
+/* ---------- ESTANTE ---------- */
+#bib-estante {
+  position: absolute;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 62%;
+  max-width: 340px;
+  height: 72%;
+  background: linear-gradient(180deg, #f5ede0 0%, #e8d8c8 100%);
+  border-radius: 12px;
+  box-shadow:
+    0 20px 40px rgba(0,0,0,.25),
+    inset 0 0 20px rgba(255,255,255,.4);
+  z-index: 5;
+}
+
+/* Moldura superior com estrela */
+#bib-estante::before {
+  content: "";
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 30px;
+  background: linear-gradient(180deg, #f5ede0, #e8d8c8);
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  box-shadow: 0 -4px 12px rgba(0,0,0,.1);
+}
+#bib-estante::after {
+  content: "⭐";
+  position: absolute;
+  top: -32px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 34px;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,.2));
+  z-index: 2;
+}
+
+/* Fundo interno lilás (parede atrás dos livros) */
+#bib-estante-fundo {
+  position: absolute;
+  inset: 12px 22px;
+  background: linear-gradient(180deg, #a888c0 0%, #9878b0 100%);
+  border-radius: 4px;
+  box-shadow: inset 0 0 20px rgba(0,0,0,.25);
+  overflow: hidden;
+}
+#bib-estante-fundo::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 18px,
+    rgba(255,255,255,.05) 18px,
+    rgba(255,255,255,.05) 20px
+  );
+}
+
+/* Prateleiras (as 4 fileiras) */
+.bib-prateleira {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  height: 10px;
+  background: linear-gradient(180deg, #f5ede0 0%, #d8c8b0 100%);
+  border-radius: 3px;
+  box-shadow:
+    0 3px 6px rgba(0,0,0,.2),
+    inset 0 1px 2px rgba(255,255,255,.6);
+  z-index: 3;
+}
+.bib-prateleira.p1 { top: 22%; }
+.bib-prateleira.p2 { top: 42%; }
+.bib-prateleira.p3 { top: 62%; }
+.bib-prateleira.p4 { top: 82%; }
+
+/* Base da estante (rodapé bonito) */
+#bib-base {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40px;
+  background: linear-gradient(180deg, #f5ede0 0%, #d8c8b0 100%);
+  border-radius: 0 0 12px 12px;
+  box-shadow: inset 0 2px 4px rgba(255,255,255,.5);
+}
+#bib-base::before {
+  content: "✦";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 18px;
+  color: #b89cc8;
+}
+
+/* ---------- CHÃO ---------- */
+#bib-chao {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 28%;
+  background: linear-gradient(180deg, #d8b890 0%, #b89868 100%);
+  box-shadow: inset 0 8px 16px rgba(0,0,0,.15);
+}
+#bib-chao::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 80px,
+    rgba(0,0,0,.08) 80px,
+    rgba(0,0,0,.08) 82px
+  );
+}
+
+/* ---------- TAPETE ---------- */
+#bib-tapete {
+  position: absolute;
+  bottom: 4%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70%;
+  max-width: 400px;
+  height: 12%;
+  max-height: 80px;
+  background: linear-gradient(180deg, #d8c4ec 0%, #b8a0cc 100%);
+  border-radius: 12px;
+  border: 4px solid #c8b0d8;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+}
+#bib-tapete::before,
+#bib-tapete::after {
+  content: "✦";
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: #f5d76e;
+  opacity: .8;
+}
+#bib-tapete::before { left: 12px; }
+#bib-tapete::after  { right: 12px; }
+
+/* ---------- PLANTINHA (canto direito) ---------- */
+#bib-planta {
+  position: absolute;
+  bottom: 28%;
+  right: 4%;
+  width: 50px;
+  height: 70px;
+  z-index: 6;
+}
+#bib-planta::before {
+  content: "🌿";
+  position: absolute;
+  top: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 50px;
+  filter: drop-shadow(0 4px 6px rgba(0,0,0,.2));
+}
+#bib-planta::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(180deg, #f0e0d0 0%, #d8c0a8 100%);
+  border-radius: 50% 50% 40% 40%;
+  box-shadow: 0 4px 10px rgba(0,0,0,.2);
+}
+
+
+/* ============================================================
+   ESTANTE — espaços clicáveis + livros detalhados
+   ============================================================ */
+
+/* Container dos espaços de cada prateleira */
+.bib-fileira {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  padding: 0 4px;
+  z-index: 4;
+  height: 18%;        /* altura útil entre prateleiras */
+}
+
+/* Fileiras ficam logo ACIMA das prateleiras (p1..p4) */
+.bib-fileira.f1 { top: 4%;  }
+.bib-fileira.f2 { top: 24%; }
+.bib-fileira.f3 { top: 44%; }
+.bib-fileira.f4 { top: 64%; }
+
+/* ---------- ESPAÇO VAZIO (slot) ---------- */
+.bib-slot {
+  flex: 1;
+  height: 100%;
+  border-radius: 3px;
+  cursor: pointer;
+  position: relative;
+  transition: background .2s, transform .15s;
+}
+
+/* Fantasminha quando você tem livro pra colocar */
+.bib-slot.tem-livro::after {
+  content: "";
+  position: absolute;
+  inset: 20% 30%;
+  border: 2px dashed rgba(255, 255, 255, .5);
+  border-radius: 4px;
+  animation: slotPulsa 1.6s ease-in-out infinite;
+}
+
+.bib-slot.tem-livro:hover,
+.bib-slot.tem-livro:active {
+  background: rgba(255, 255, 255, .12);
+  transform: scale(1.05);
+}
+
+@keyframes slotPulsa {
+  0%, 100% { opacity: .3; }
+  50%      { opacity: .9; }
+}
+
+/* ---------- LIVRO NA ESTANTE ---------- */
+.bib-livro {
+  flex: 1;
+  height: 100%;
+  border-radius: 3px 2px 2px 3px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    -2px 0 4px rgba(0, 0, 0, .35),           /* sombra lateral esquerda */
+    2px 0 4px rgba(0, 0, 0, .15),            /* sombra lateral direita */
+    inset 2px 0 3px rgba(255, 255, 255, .15); /* brilho da lombada */
+  transition: transform .15s, filter .15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bib-livro:active {
+  transform: translateY(-4px) scale(1.03);
+  filter: brightness(1.15);
+}
+
+/* Lombada (faixa escura na lateral esquerda) */
+.bib-livro::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 18%;
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, .45) 0%,
+    rgba(0, 0, 0, .15) 60%,
+    transparent 100%);
+  pointer-events: none;
+}
+
+/* Detalhe dourado embaixo da lombada */
+.bib-livro::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 18%;
+  height: 12%;
+  background: linear-gradient(90deg,
+    var(--bib-cor2, #d4af37) 0%,
+    transparent 100%);
+  opacity: .9;
+  pointer-events: none;
+}
+
+/* Texto do livro (título + autor) — vertical, lendo de baixo pra cima */
+.bib-livro-txt {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  color: #fff;
+  font-size: clamp(8px, 1.8vw, 11px);
+  font-weight: 700;
+  font-family: Georgia, serif;
+  letter-spacing: .4px;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, .6),
+    0 0 3px rgba(0, 0, 0, .4);
+  padding: 6px 0;
+  max-height: 92%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Autor pequenininho embaixo (não aparece se o livro for muito estreito) */
+.bib-livro-autor {
+  position: absolute;
+  bottom: 4%;
+  left: 22%;
+  right: 4%;
+  font-size: clamp(6px, 1.2vw, 8px);
+  color: rgba(255, 255, 255, .7);
+  font-weight: 600;
+  font-family: system-ui, sans-serif;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .7);
+  pointer-events: none;
+  z-index: 2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Estrelinha dourada se for raro (só aparece visualmente se quiser) */
+.bib-livro.raridade-raro .bib-livro-txt::before {
+  content: "✦ ";
+  color: #f5d76e;
+  font-size: .85em;
+}
+.bib-livro.raridade-lendario .bib-livro-txt::before {
+  content: "★ ";
+  color: #ffcc33;
+  font-size: .9em;
+}
+
+/* ---------- PREVIEW DO LIVRO (quando tá escolhendo onde colocar) ---------- */
+.bib-livro.preview {
+  opacity: .55;
+  animation: slotPulsa 1.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ---------- MODAL DE ESCOLHA (lista do inventário) ---------- */
+#bib-escolha {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .6);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn .25s;
+}
+
+#bib-escolha-card {
+  background: linear-gradient(180deg, #f5ede0 0%, #e8d8c8 100%);
+  border-radius: 20px;
+  padding: 20px;
+  width: 100%;
+  max-width: 340px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
+  border: 4px solid #d8c4ec;
+}
+
+#bib-escolha-card h3 {
+  margin: 0 0 4px;
+  font-size: 17px;
+  color: #5d4f9e;
+  text-align: center;
+  font-weight: 700;
+}
+
+#bib-escolha-card p {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: #5d4f9e;
+  text-align: center;
+  opacity: .7;
+}
+
+.bib-escolha-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 2px solid #e8d5f0;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: transform .15s, border-color .15s;
+}
+
+.bib-escolha-item:active {
+  transform: scale(.97);
+}
+
+.bib-escolha-item:hover {
+  border-color: #b8a0cc;
+}
+
+.bib-escolha-mini {
+  width: 26px;
+  height: 34px;
+  border-radius: 2px;
+  box-shadow:
+    -1px 0 3px rgba(0, 0, 0, .3),
+    inset 2px 0 2px rgba(255, 255, 255, .15);
+  position: relative;
+  flex-shrink: 0;
+}
+.bib-escolha-mini::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 22%;
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, .45) 0%,
+    transparent 100%);
+}
+
+.bib-escolha-info {
+  flex: 1;
+  min-width: 0;
+}
+.bib-escolha-nome {
+  font-size: 12px;
+  font-weight: 700;
+  color: #5d4f9e;
+  line-height: 1.2;
+  margin-bottom: 2px;
+}
+.bib-escolha-autor {
+  font-size: 10px;
+  color: #5d4f9e;
+  opacity: .6;
+}
+
+.bib-escolha-vazio {
+  text-align: center;
+  padding: 20px 10px;
+  font-size: 13px;
+  color: #5d4f9e;
+  opacity: .7;
+  line-height: 1.5;
+}
+
+#bib-escolha-cancelar {
+  display: block;
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  background: #e8e0e8;
+  color: #5d4f9e;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* ---------- MENU DE AÇÃO DO LIVRO (tirar da estante) ---------- */
+#bib-menu {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .6);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn .25s;
+}
+
+#bib-menu-card {
+  background: linear-gradient(180deg, #f5ede0 0%, #e8d8c8 100%);
+  border-radius: 20px;
+  padding: 20px;
+  width: 100%;
+  max-width: 320px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
+  border: 4px solid #d8c4ec;
+}
+
+#bib-menu-card h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+  color: #5d4f9e;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+#bib-menu-card p {
+  margin: 0 0 14px;
+  font-size: 12px;
+  color: #5d4f9e;
+  opacity: .65;
+}
+
+#bib-menu-card button {
+  display: block;
+  width: 100%;
+  margin: 8px 0;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+
+/* ============================================================
+   LOJA DE LIVROS (painel por cima da biblioteca)
+   ============================================================ */
+
+#bib-loja-painel {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .65);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: fadeIn .25s;
+}
+
+#bib-loja-card {
+  background: linear-gradient(180deg, #f5ede0 0%, #e8d8c8 100%);
+  border-radius: 22px;
+  width: 100%;
+  max-width: 380px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, .5);
+  border: 4px solid #d8c4ec;
+  overflow: hidden;
+}
+
+/* ---------- TOPO da loja ---------- */
+#bib-loja-topo {
+  padding: 16px 20px 12px;
+  background: linear-gradient(180deg, #e8d5f0 0%, #d8c4ec 100%);
+  border-bottom: 3px solid #c8b0d8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+#bib-loja-topo h2 {
+  margin: 0;
+  font-size: 19px;
+  color: #5d4f9e;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+#bib-loja-moedas {
+  font-size: 14px;
+  font-weight: 700;
+  color: #5d4f9e;
+  background: rgba(255, 255, 255, .6);
+  padding: 5px 12px;
+  border-radius: 20px;
+}
+
+/* ---------- LISTA de livros ---------- */
+#bib-loja-lista {
+  padding: 14px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+  flex: 1;
+}
+
+/* Card de cada livro */
+.bib-loja-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #fff;
+  border: 3px solid #e8d5f0;
+  border-radius: 14px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: transform .15s, border-color .15s, background .2s;
+  box-shadow: 0 3px 10px rgba(93, 79, 158, .08);
+}
+
+.bib-loja-item:active {
+  transform: scale(.97);
+}
+
+.bib-loja-item:hover {
+  border-color: #b8a0cc;
+}
+
+/* Livro comprado */
+.bib-loja-item.comprado {
+  background: #f0f8f2;
+  border-color: #b8dfd0;
+  cursor: default;
+}
+.bib-loja-item.comprado:active { transform: none; }
+
+/* Sem moedas */
+.bib-loja-item.sem-moedas {
+  opacity: .55;
+}
+
+/* Capa do livro (miniatura) */
+.bib-loja-capa {
+  width: 44px;
+  height: 60px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  box-shadow:
+    -2px 0 5px rgba(0, 0, 0, .35),
+    2px 0 5px rgba(0, 0, 0, .15),
+    inset 3px 0 4px rgba(255, 255, 255, .2);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Lombada escura */
+.bib-loja-capa::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 22%;
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, .5) 0%,
+    rgba(0, 0, 0, .15) 60%,
+    transparent 100%);
+}
+
+/* Detalhe dourado */
+.bib-loja-capa::after {
+  content: "";
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 22%;
+  height: 15%;
+  background: linear-gradient(90deg,
+    var(--bib-cor2, #d4af37) 0%,
+    transparent 100%);
+  opacity: .9;
+}
+
+/* Info do livro */
+.bib-loja-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.bib-loja-nome {
+  font-size: 13px;
+  font-weight: 700;
+  color: #5d4f9e;
+  line-height: 1.25;
+  margin-bottom: 3px;
+  word-wrap: break-word;
+}
+
+.bib-loja-autor {
+  font-size: 11px;
+  color: #5d4f9e;
+  opacity: .6;
+  margin-bottom: 4px;
+}
+
+.bib-loja-preco {
+  font-size: 13px;
+  font-weight: 800;
+  color: #2e6b52;
+}
+
+.bib-loja-preco.comprado {
+  color: #2e6b52;
+  font-size: 12px;
+}
+
+/* ---------- RODAPÉ ---------- */
+#bib-loja-rodape {
+  padding: 12px 16px;
+  background: #e8d5f0;
+  border-top: 3px solid #c8b0d8;
+  flex-shrink: 0;
+}
+
+#bib-loja-progresso {
+  font-size: 12px;
+  color: #5d4f9e;
+  text-align: center;
+  margin-bottom: 8px;
+  font-weight: 700;
+}
+
+#bib-loja-fechar {
+  display: block;
+  width: 100%;
+  padding: 13px;
+  font-size: 15px;
+  font-weight: 700;
+  background: #d8c4ec;
+  color: #5d4f9e;
+  border: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: transform .15s;
+}
+#bib-loja-fechar:active { transform: scale(.97); }
+
+/* ---------- TOAST de compra ---------- */
+.bib-toast-compra {
+  position: fixed;
+  top: 90px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #d8c4ec;
+  color: #5d4f9e;
+  padding: 12px 22px;
+  border-radius: 22px;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 9999;
+  pointer-events: none;
+  box-shadow: 0 6px 24px rgba(93, 79, 158, .4);
+  animation: moedaSobe 1.6s ease-out forwards;
+  max-width: 80vw;
+  text-align: center;
+}
+
+
+/* ============================================================
+   CASA DA NÉBULA (tela cheia, CSS puro)
+   ============================================================ */
+
+#casa {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: block;
+  overflow: hidden;
+  background: #f0e0c8;
+  font-family: system-ui, sans-serif;
+}
+
+/* ---------- BOTÃO SAIR ---------- */
+#casa-sair {
+  position: absolute;
+  top: 18px;
+  left: 16px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #e8d5f0;
+  color: #7a5fa8;
+  border: 3px solid #f0d8ff;
+  border-radius: 30px;
+  padding: 10px 22px;
+  font-size: 16px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(122, 95, 168, .25);
+  transition: transform .15s;
+}
+#casa-sair:active { transform: scale(.95); }
+#casa-sair svg { width: 20px; height: 20px; }
+
+/* ============================================================
+   INTERIOR DA CASA (quarto aconchegante)
+   ============================================================ */
+
+#casa-interior {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #d8b890;
+}
+
+/* ---------- PAREDE DE MADEIRA (fundo) ---------- */
+#casa-parede {
+  position: absolute;
+  inset: 0 0 35% 0;
+  background: linear-gradient(180deg, #e8c8a0 0%, #d8b088 100%);
+  overflow: hidden;
+}
+
+/* Ripas verticais (madeira) */
+#casa-parede::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 38px,
+    rgba(120, 80, 50, .12) 38px,
+    rgba(120, 80, 50, .12) 40px
+  );
+}
+
+/* Detalhes horizontais sutis */
+#casa-parede::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 110px,
+    rgba(255, 255, 255, .06) 110px,
+    rgba(255, 255, 255, .06) 112px
+  );
+}
+
+/* ---------- JANELA GRANDE (centro) ---------- */
+#casa-janela {
+  position: absolute;
+  top: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 55%;
+  max-width: 420px;
+  height: 42%;
+  background: linear-gradient(180deg,
+    #f5e8d0 0%,
+    #e8d8b8 40%,
+    #d0c0a0 70%,
+    #b8a888 100%);
+  border: 10px solid #a87850;
+  border-radius: 8px;
+  box-shadow:
+    inset 0 0 60px rgba(255, 240, 200, .6),
+    0 6px 20px rgba(0, 0, 0, .2);
+  overflow: hidden;
+  z-index: 2;
+}
+
+/* Vista lá fora (silhuetas de prédios distantes) */
+#casa-janela::before {
+  content: "";
+  position: absolute;
+  bottom: 20%;
+  left: 0;
+  right: 0;
+  height: 30%;
+  background:
+    linear-gradient(180deg, transparent 0%, rgba(120, 90, 70, .25) 100%),
+    repeating-linear-gradient(90deg,
+      transparent 0,
+      transparent 30px,
+      rgba(100, 80, 70, .2) 30px,
+      rgba(100, 80, 70, .2) 50px,
+      transparent 50px,
+      transparent 70px,
+      rgba(100, 80, 70, .18) 70px,
+      rgba(100, 80, 70, .18) 90px
+    );
+  filter: blur(1px);
+}
+
+/* Brilho suave do sol */
+#casa-janela::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 30% 30%,
+    rgba(255, 230, 180, .55) 0%,
+    transparent 55%);
+}
+
+/* Caixilho central */
+#casa-janela-caixilho {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+#casa-janela-caixilho::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0;
+  left: 50%;
+  width: 8px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, #a87850, #c89868, #a87850);
+}
+#casa-janela-caixilho::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0;
+  top: 50%;
+  height: 8px;
+  transform: translateY(-50%);
+  background: linear-gradient(180deg, #a87850, #c89868, #a87850);
+}
+
+/* ---------- CHÃO DE MADEIRA ---------- */
+#casa-chao {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 35%;
+  background: linear-gradient(180deg, #c89868 0%, #a87850 100%);
+  box-shadow: inset 0 8px 20px rgba(0, 0, 0, .15);
+}
+#casa-chao::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 70px,
+    rgba(0, 0, 0, .12) 70px,
+    rgba(0, 0, 0, .12) 72px
+  );
+}
+#casa-chao::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    0deg,
+    transparent 0,
+    transparent 30px,
+    rgba(255, 255, 255, .04) 30px,
+    rgba(255, 255, 255, .04) 32px
+  );
+}
+
+/* ---------- TAPETE REDONDO VAZIO (centro do chão) ---------- */
+#casa-tapete {
+  position: absolute;
+  bottom: 8%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 55%;
+  max-width: 380px;
+  height: 22%;
+  max-height: 130px;
+  background: radial-gradient(ellipse at center,
+    #f5e8d0 0%,
+    #e8d8b8 40%,
+    #d8b890 70%,
+    #c89868 100%);
+  border-radius: 50%;
+  box-shadow:
+    0 8px 20px rgba(0, 0, 0, .2),
+    inset 0 -10px 30px rgba(120, 80, 50, .2);
+  border: 6px solid #b88858;
+  z-index: 3;
+}
+/* Anéis decorativos do tapete */
+#casa-tapete::before {
+  content: "";
+  position: absolute;
+  inset: 12%;
+  border-radius: 50%;
+  border: 3px dashed rgba(180, 130, 90, .4);
+}
+#casa-tapete::after {
+  content: "";
+  position: absolute;
+  inset: 28%;
+  border-radius: 50%;
+  border: 2px solid rgba(180, 130, 90, .3);
+}
+
+/* ---------- PLANTAS NOS CANTOS ---------- */
+.casa-planta {
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  filter: drop-shadow(0 6px 10px rgba(0, 0, 0, .25));
+}
+
+.casa-planta.esq {
+  bottom: 28%;
+  left: 2%;
+  font-size: 90px;
+}
+
+.casa-planta.dir {
+  bottom: 26%;
+  right: 3%;
+  font-size: 100px;
+}
+
+.casa-planta.top-esq {
+  top: 6%;
+  left: 4%;
+  font-size: 60px;
+}
+
+.casa-planta.top-dir {
+  top: 8%;
+  right: 5%;
+  font-size: 55px;
+}
+
+/* ---------- LUZ DA JANELA (feixe no chão) ---------- */
+#casa-luz {
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  transform: translateX(-50%) perspective(500px) rotateX(45deg);
+  width: 55%;
+  max-width: 420px;
+  height: 30%;
+  background: radial-gradient(ellipse at top,
+    rgba(255, 240, 200, .5) 0%,
+    transparent 70%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ============================================================
+   TELA: "COMPRAR CASA"
+   ============================================================ */
+
+#casa-sem-casa {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px 20px;
+  background: linear-gradient(180deg, #e8d5f0 0%, #d8c4ec 100%);
+  z-index: 10;
+  overflow-y: auto;
+}
+
+#casa-sem-casa h1 {
+  font-size: 22px;
+  color: #5d4f9e;
+  font-weight: 800;
+  margin: 0 0 6px;
+  text-align: center;
+}
+
+#casa-sem-casa p.sub {
+  font-size: 13px;
+  color: #5d4f9e;
+  opacity: .7;
+  margin: 0 0 24px;
+  text-align: center;
+}
+
+/* Card da casa pra comprar */
+.casa-card {
+  background: #fff;
+  border: 4px solid #e8d5f0;
+  border-radius: 20px;
+  padding: 16px;
+  width: 100%;
+  max-width: 320px;
+  box-shadow: 0 10px 30px rgba(93, 79, 158, .2);
+  text-align: center;
+}
+
+/* Mini prévia da casa em CSS */
+.casa-preview {
+  width: 100%;
+  height: 130px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f5e8d0 0%, #e8d8b8 100%);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 12px;
+  box-shadow: inset 0 4px 12px rgba(0, 0, 0, .1);
+}
+
+/* Telhado */
+.casa-preview::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70%;
+  height: 35%;
+  background: linear-gradient(180deg, #a87850 0%, #885838 100%);
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+}
+
+/* Corpo da casa */
+.casa-preview::after {
+  content: "";
+  position: absolute;
+  bottom: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60%;
+  height: 45%;
+  background: linear-gradient(180deg, #f0e0c8 0%, #d8c0a0 100%);
+  border-radius: 4px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, .15);
+}
+
+/* Porta e janela (detalhes) */
+.casa-preview .casa-porta {
+  position: absolute;
+  bottom: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 14%;
+  height: 25%;
+  background: #885838;
+  border-radius: 4px 4px 0 0;
+  z-index: 2;
+}
+.casa-preview .casa-janela-mini {
+  position: absolute;
+  bottom: 30%;
+  left: 22%;
+  width: 12%;
+  height: 12%;
+  background: #a8d8e8;
+  border: 2px solid #885838;
+  border-radius: 2px;
+  z-index: 2;
+}
+.casa-preview .casa-janela-mini.dir {
+  left: auto;
+  right: 22%;
+}
+
+.casa-nome {
+  font-size: 17px;
+  font-weight: 800;
+  color: #5d4f9e;
+  margin-bottom: 4px;
+}
+
+.casa-desc {
+  font-size: 12px;
+  color: #5d4f9e;
+  opacity: .6;
+  margin-bottom: 12px;
+}
+
+.casa-preco {
+  font-size: 18px;
+  font-weight: 800;
+  color: #2e6b52;
+  margin-bottom: 14px;
+}
+
+.casa-btn-comprar {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  font-size: 15px;
+  font-weight: 800;
+  background: linear-gradient(180deg, #b8dfd0 0%, #98c8b0 100%);
+  color: #2e6b52;
+  border: 0;
+  border-radius: 14px;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 4px 12px rgba(46, 107, 82, .25);
+  transition: transform .15s;
+}
+.casa-btn-comprar:active { transform: scale(.96); }
+
+.casa-btn-comprar:disabled {
+  background: #d8d0d8;
+  color: #888;
+  cursor: not-allowed;
+  box-shadow: none;
+  opacity: .7;
+}
+
+.casa-moedas-info {
+  font-size: 13px;
+  color: #5d4f9e;
+  opacity: .7;
+  margin-top: 12px;
+  text-align: center;
+}
+
+
+/* ============================================================
+   NAVEGAÇÃO DA CASA (botões pra trocar de tela)
+   ============================================================ */
+
+#casa-nav {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 15;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 0 12px;
+}
+
+.casa-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #e8d5f0;
+  color: #7a5fa8;
+  border: 3px solid #f0d8ff;
+  border-radius: 30px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(122, 95, 168, .3);
+  transition: transform .15s;
+  white-space: nowrap;
+}
+.casa-nav-btn:active { transform: scale(.95); }
+
+/* ============================================================
+   FACHADA (lado de fora)
+   ============================================================ */
+
+#casa-fachada {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #a8d8e8 0%, #d8e8f0 100%);
+}
+
+/* Céu (azul claro) */
+#casa-ceu {
+  position: absolute;
+  inset: 0 0 30% 0;
+  background: linear-gradient(180deg, #a8d8e8 0%, #d8e8f0 100%);
+}
+
+/* Sol */
+#casa-sol {
+  position: absolute;
+  top: 10%;
+  right: 12%;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff8c8 0%, #f5d76e 60%, #e8b840 100%);
+  box-shadow: 0 0 40px rgba(245, 215, 110, .7);
+}
+
+/* Nuvens */
+#casa-nuvens {
+  position: absolute;
+  top: 12%;
+  left: 10%;
+  font-size: 32px;
+  opacity: .8;
+  letter-spacing: 30px;
+}
+
+/* Prédio/casa */
+#casa-predio {
+  position: absolute;
+  bottom: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 65%;
+  max-width: 340px;
+  height: 55%;
+}
+
+/* Telhado */
+#casa-telhado {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  height: 38%;
+  background: linear-gradient(180deg, #a87850 0%, #885838 100%);
+  clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+  border-radius: 4px;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, .25));
+}
+
+/* Corpo da casa */
+#casa-corpo {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70%;
+  height: 65%;
+  background: linear-gradient(180deg, #f0e0c8 0%, #d8c0a0 100%);
+  border-radius: 8px 8px 0 0;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, .2);
+}
+
+/* Porta */
+#casa-porta-externa {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 26%;
+  height: 55%;
+  background: linear-gradient(180deg, #885838 0%, #684828 100%);
+  border-radius: 30px 30px 0 0;
+  box-shadow: inset 0 4px 8px rgba(0, 0, 0, .3);
+  border: 3px solid #684828;
+}
+
+/* Janelas */
+#casa-janela-externa {
+  position: absolute;
+  top: 25%;
+  width: 22%;
+  height: 25%;
+  background: linear-gradient(180deg, #a8d8e8 0%, #88c0d0 100%);
+  border: 4px solid #885838;
+  border-radius: 4px;
+  box-shadow: inset 0 0 8px rgba(255, 255, 255, .5);
+}
+#casa-janela-externa.esq { left: 10%; }
+#casa-janela-externa.dir { right: 10%; }
+
+/* Rua/chão */
+#casa-rua {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 30%;
+  background: linear-gradient(180deg, #98c888 0%, #78a868 100%);
+}
+#casa-rua::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 50px,
+    rgba(0, 0, 0, .06) 50px,
+    rgba(0, 0, 0, .06) 52px
+  );
+}
+
+/* ============================================================
+   VARANDA (quintal) — estilo da imagem de referência
+   ============================================================ */
+
+#casa-varanda {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #1a1a2e;
+}
+
+/* Céu noturno */
+#casa-varanda-ceu {
+  position: absolute;
+  inset: 0 0 55% 0;
+  background: linear-gradient(180deg, #1a1a3e 0%, #2a2a5e 50%, #3a3a6e 100%);
+}
+
+/* Estrelinhas */
+#casa-varanda-estrelas {
+  position: absolute;
+  inset: 0 0 55% 0;
+  background-image:
+    radial-gradient(circle at 15% 20%, #fff 0 1.5px, transparent 2px),
+    radial-gradient(circle at 45% 35%, #fff 0 1px, transparent 1.5px),
+    radial-gradient(circle at 75% 15%, #fff 0 1.5px, transparent 2px),
+    radial-gradient(circle at 30% 55%, #fff 0 1px, transparent 1.5px),
+    radial-gradient(circle at 85% 45%, #fff 0 1.5px, transparent 2px),
+    radial-gradient(circle at 60% 70%, #fff 0 1px, transparent 1.5px);
+  opacity: .8;
+}
+
+/* Cerca de madeira no fundo */
+#casa-varanda-cerca {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 40%;
+  height: 20%;
+  background: repeating-linear-gradient(
+    90deg,
+    #6a4828 0,
+    #6a4828 12px,
+    #7a5838 12px,
+    #7a5838 24px
+  );
+  border-top: 4px solid #4a2818;
+  border-bottom: 4px solid #4a2818;
+}
+
+/* Parede de pedras */
+#casa-varanda-pedras {
+  position: absolute;
+  left: 5%;
+  right: 5%;
+  top: 45%;
+  height: 15%;
+  background:
+    radial-gradient(circle at 10% 50%, #a8a8a8 0 20px, transparent 21px),
+    radial-gradient(circle at 30% 40%, #b8b8b8 0 24px, transparent 25px),
+    radial-gradient(circle at 55% 55%, #a8a8a8 0 22px, transparent 23px),
+    radial-gradient(circle at 80% 45%, #b8b8b8 0 26px, transparent 27px);
+  opacity: .6;
+}
+
+/* Postes com lâmpadas */
+#casa-varanda-postes {
+  position: absolute;
+  inset: 0 0 55% 0;
+  pointer-events: none;
+}
+
+.casa-lampada {
+  position: absolute;
+  top: 30%;
+  width: 30px;
+  height: 50px;
+  background: linear-gradient(180deg, #fff8c8 0%, #e8c878 100%);
+  border-radius: 50% 50% 40% 40%;
+  box-shadow:
+    0 0 30px rgba(255, 240, 200, .7),
+    0 0 60px rgba(255, 240, 200, .4);
+  transform: translateX(-50%);
+}
+.casa-lampada::before {
+  content: "";
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 40px;
+  background: #888;
+}
+
+/* Fio com luzinhas */
+#casa-varanda-fio {
+  position: absolute;
+  top: 25%;
+  left: 10%;
+  right: 10%;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  box-shadow:
+    0 4px 8px 0 rgba(255, 240, 200, .5),
+    -30px 4px 8px 0 rgba(255, 240, 200, .5),
+    30px 4px 8px 0 rgba(255, 240, 200, .5),
+    -60px 4px 8px 0 rgba(255, 240, 200, .5),
+    60px 4px 8px 0 rgba(255, 240, 200, .5);
+}
+
+/* Grama */
+#casa-varanda-grama {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 40%;
+  background: linear-gradient(180deg, #4a8a4a 0%, #2a5a2a 100%);
+}
+#casa-varanda-grama::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(circle at 20% 30%, #6aaa6a 0 3px, transparent 4px),
+    radial-gradient(circle at 60% 50%, #6aaa6a 0 3px, transparent 4px),
+    radial-gradient(circle at 80% 20%, #6aaa6a 0 3px, transparent 4px),
+    radial-gradient(circle at 40% 70%, #6aaa6a 0 3px, transparent 4px);
+  opacity: .6;
+}
+
+/* Deck de madeira */
+#casa-varanda-deck {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 15%;
+  background: linear-gradient(180deg, #8a5838 0%, #6a3828 100%);
+  box-shadow: inset 0 6px 12px rgba(0, 0, 0, .3);
+}
+#casa-varanda-deck::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    90deg,
+    transparent 0,
+    transparent 40px,
+    rgba(0, 0, 0, .2) 40px,
+    rgba(0, 0, 0, .2) 42px
+  );
+}
