@@ -701,8 +701,8 @@ addEventListener('pointerdown', e => {
   act();
   if (gOn) return;
   if (!permAsked) { permAsked = 1; askPerm().then(startSensors); }
-  if (e.target.closest('button,#estado,#panel')) return;
-
+  if (e.target.closest('button,#estado,#panel,#bar')) return;
+  
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (ptrs.size === 1) {
     sx = lastX = e.clientX;
