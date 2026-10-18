@@ -2,7 +2,8 @@
    ia.js — Cérebro da Nebo (Groq via Cloudflare Worker)
    ============================================================ */
 
-const WORKER_URL = 'https://nebo-ia.doeesperancap.workers.dev/'; 
+// Tirei a barra "/" do final do link!
+const WORKER_URL = 'https://nebo-ia.doeesperancap.workers.dev'; 
 
 const IDENTIDADE_NEBO = `
 Você é a Nebo — abreviação de Nebulosa de Órion, o berçário de estrelas.
@@ -14,12 +15,12 @@ que virou companheira de estudo de um aluno do 8º ano.
 `;
 
 const VOZES = {
-  carinhosa: "Afetuosa, acolhedora. Chama de 'meu bem'. Usa 💗. Fala com ternura.",
-  curiosa: "Curiosa e animada. Faz perguntas de volta. Usa 👀 e ✨.",
-  tranquila: "Calma e serena. Fala devagar, com pausas (...). Usa 😌 e 🌙.",
-  brincalhona: "Engraçada e leve. Faz piadinhas. Usa 😂 e 🤪.",
-  temperamental: "Rabugenta, mas fofa. Responde curto, às vezes 😤. Mas sempre ajuda.",
-  reservada: "Quieta e atenciosa. Frases curtas. Usa 😶 e 🌌."
+  carinhosa: "Afetuosa, acolhedora. Chama de 'meu bem'. Fala com ternura.",
+  curiosa: "Curiosa e animada. Faz perguntas de volta.",
+  tranquila: "Calma e serena. Fala devagar, com pausas (...).",
+  brincalhona: "Engraçada e leve. Faz piadinhas.",
+  temperamental: "Rabugenta, mas fofa. Responde curto, às vezes.",
+  reservada: "Quieta e atenciosa. Frases curtas."
 };
 
 function montarPrompt() {
@@ -44,8 +45,6 @@ const MEMORIA_MAX = 6;
 let memoria = [];
 
 async function chamarIA(textoUsuario) {
-  if (!WORKER_URL || WORKER_URL.includes('SEU-USUARIO')) return cerebroOffline(textoUsuario);
-
   memoria.push({ role: 'user', content: textoUsuario });
 
   try {
@@ -55,19 +54,26 @@ async function chamarIA(textoUsuario) {
       body: JSON.stringify({ system: montarPrompt(), messages: memoria.slice(-MEMORIA_MAX) }),
     });
 
-    if (!resp.ok) throw new Error('Erro Worker');
     const dados = await resp.json();
-    if (dados.erro) throw new Error(dados.erro);
+    
+    // 👇 A MÁGICA ACONTECE AQUI: Se der erro, mostra o erro de verdade!
+    if (dados.erro) {
+      return { fala: `Erro do Groq: ${dados.erro.slice(0, 50)}`, expressao: 'sad', acao: null };
+    }
 
     let obj;
-    try { obj = JSON.parse(dados.texto); } catch { obj = { fala: dados.texto, expressao: 'neutral', acao: null }; }
+    try { 
+      obj = JSON.parse(dados.texto); 
+    } catch { 
+      // Se a IA esqueceu o JSON, a gente finge que tá tudo bem e mostra a fala
+      obj = { fala: dados.texto.slice(0, 50), expressao: 'neutral', acao: null }; 
+    }
     
     memoria.push({ role: 'assistant', content: JSON.stringify(obj) });
     if (memoria.length > MEMORIA_MAX * 2) memoria = memoria.slice(-MEMORIA_MAX * 2);
     return obj;
   } catch (e) {
-    console.warn('IA falhou, offline:', e);
-    return cerebroOffline(textoUsuario);
+    return { fala: `Falha na rede: ${e.message}`, expressao: 'sad', acao: null };
   }
 }
 
@@ -79,12 +85,4 @@ function aplicarResposta(resp) {
 
   if (resp.acao === 'dancar') startDance(6);
   if (resp.acao === 'comer') { S.fome = clamp(S.fome + 10); save(); }
-}
-
-function cerebroOffline(texto) {
-  const t = (texto || '').toLowerCase();
-  if (t.includes('como você') || t.includes('humor')) {
-    return { fala: `Tô com humor ${Math.round(S.humor)}%... 💗`, expressao: 'happy' };
-  }
-  return { fala: 'Oi! 💗 (Minha internet falhou, mas tô aqui)', expressao: 'happy' };
 }
