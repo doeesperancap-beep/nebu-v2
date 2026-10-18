@@ -2,7 +2,7 @@
    ia.js — Cérebro da Nebo (Groq via Cloudflare Worker)
    ============================================================ */
 
-const WORKER_URL = 'https://nebo-ia.doeesperancap.workers.dev'; 
+const WORKER_URL = 'https://nebo-ia.doeesperancap.workers.dev/'; 
 
 const IDENTIDADE_NEBO = `
 Você é a Nebo — abreviação de Nebulosa de Órion, o berçário de estrelas.
