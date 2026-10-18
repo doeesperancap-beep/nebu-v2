@@ -1,5 +1,5 @@
 /* ============================================================
-   voz.js — A Nebo escuta e fala
+   voz.js — A Nebo escuta e fala (Modo Conversa Contínua)
    ============================================================ */
 
 let reconhecimento = null;
@@ -14,28 +14,64 @@ function iniciarVoz() {
 
   reconhecimento = new SR();
   reconhecimento.lang = 'pt-BR';
-  reconhecimento.continuous = false;
+  reconhecimento.continuous = true; // <-- Fica ouvindo sem parar!
   reconhecimento.interimResults = false;
 
   reconhecimento.onresult = async (e) => {
-    const texto = e.results[0][0].transcript.trim();
+    // Pega a última frase que a pessoa falou
+    const ultimoResultado = e.results[e.results.length - 1];
+    const texto = ultimoResultado[0].transcript.trim();
+    
     if (!texto) return;
+    
+    // Se a pessoa falou algo, a gente pausa o microfone para ela não ouvir a própria resposta da Nebo
+    reconhecimento.stop(); 
+    
     set('curious', 2000, '🤔 ...');
     const resp = await chamarIA(texto);
     aplicarResposta(resp);
+    
+    // Ela fala a resposta
     falar(resp.fala);
+    
+    // Depois que ela terminar de falar, liga o microfone de novo
+    setTimeout(() => {
+      if (ouvindo) {
+        try { reconhecimento.start(); } catch(e) {}
+      }
+    }, 4000); // 4 segundos de pausa
   };
 
-  reconhecimento.onerror = () => { ouvindo = false; };
-  reconhecimento.onend = () => { ouvindo = false; };
+  reconhecimento.onerror = (e) => { 
+    console.log('Erro no microfone:', e.error); 
+    ouvindo = false; 
+    atualizarBotaoVoz();
+  };
+  
+  reconhecimento.onend = () => { 
+    // Se parou de ouvir sozinho, tenta religar se ainda estivermos no modo "ouvindo"
+    if (ouvindo) {
+      try { reconhecimento.start(); } catch(e) { ouvindo = false; atualizarBotaoVoz(); }
+    }
+  };
 
-  reconhecimento.start();
-  ouvindo = true;
-  set('curious', 4000, 'Tô ouvindo... 👂');
+  try {
+    reconhecimento.start();
+    ouvindo = true;
+    say('Pode falar! 👂'); 
+    atualizarBotaoVoz();
+  } catch(e) {
+    say('Erro ao ligar o microfone. 😢');
+  }
 }
 
 function pararVoz() {
-  if (reconhecimento && ouvindo) { reconhecimento.stop(); ouvindo = false; }
+  ouvindo = false;
+  if (reconhecimento) {
+    reconhecimento.stop();
+  }
+  say('Microfone desligado. 🤫');
+  atualizarBotaoVoz();
 }
 
 function falar(texto) {
@@ -46,4 +82,17 @@ function falar(texto) {
   u.rate = 1.05;
   u.pitch = S.pers === 'temperamental' ? 1.15 : 1.0;
   speechSynthesis.speak(u);
+}
+
+// Avisa no botão se está ouvindo ou não
+function atualizarBotaoVoz() {
+  const btn = document.getElementById('bVoz');
+  if (!btn) return;
+  if (ouvindo) {
+    btn.style.background = '#ffb3b3'; // Fica vermelho quando tá ouvindo
+    btn.textContent = '🔴 Parar';
+  } else {
+    btn.style.background = '#ffffff14'; // Cor normal
+    btn.textContent = '🎤 Falar';
+  }
 }
