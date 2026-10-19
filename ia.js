@@ -3,7 +3,7 @@
    ============================================================ */
 
 const WORKER_URL = 'https://nebo-ia.doeesperancap.workers.dev'; 
-const MEMORIA_MAX = 6; // Histórico da conversa atual
+const MEMORIA_MAX = 6; 
 let memoriaConversa = [];
 
 async function chamarIA(textoUsuario) {
@@ -13,28 +13,39 @@ async function chamarIA(textoUsuario) {
     const resp = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      // Chama a função montarPrompt() que agora vive no nebo_dna.js
       body: JSON.stringify({ system: montarPrompt(), messages: memoriaConversa.slice(-MEMORIA_MAX) }),
     });
 
     const dados = await resp.json();
-    if (dados.erro) return { fala: "Tive um sonho confuso (erro).", expressoes: ['sad'] };
+    
+    // Se a Cloudflare devolver um erro, avisa e não tenta ler o JSON
+    if (dados.erro) {
+      return { fala: "Tive um sonho confuso (erro na nuvem).", expressoes: ['sad'], acao: 'nenhuma' };
+    }
 
     let obj;
-    try { obj = JSON.parse(dados.texto); } catch { obj = { fala: dados.texto, expressoes: ['neutral'] }; }
+    try { 
+      obj = JSON.parse(dados.texto); 
+    } catch { 
+      // Se a IA quebrar o JSON, a gente tenta usar o texto bruto
+      obj = { fala: String(dados.texto).slice(0, 100), expressoes: ['neutral'], acao: 'nenhuma' }; 
+    }
     
-    // 🧠 SE A IA MANDOU SALVAR ALGO, A GENTE SALVA AQUI:
+    // Garante que a memória seja salva com segurança
     if (obj.salvar_memoria && typeof obj.salvar_memoria === 'string') {
       adicionarMemoria('fatos', obj.salvar_memoria);
     }
 
+    // Garante que as expressões existam e sejam válidas
     if (obj.expressao && !obj.expressoes) obj.expressoes = [obj.expressao];
     if (!obj.expressoes || !Array.isArray(obj.expressoes)) obj.expressoes = ['neutral'];
 
     memoriaConversa.push({ role: 'assistant', content: JSON.stringify(obj) });
+    if (memoriaConversa.length > MEMORIA_MAX * 2) memoriaConversa = memoriaConversa.slice(-MEMORIA_MAX * 2);
+    
     return obj;
   } catch (e) {
-    return { fala: `Falha na rede.`, expressoes: ['sad'] };
+    return { fala: `Falha na rede: ${e.message}`, expressoes: ['sad'], acao: 'nenhuma' };
   }
 }
 
@@ -54,7 +65,7 @@ function aplicarResposta(resp) {
     }, index * tempoPorRosto);
   });
 
-  // Executa ações
+  // Executa ações (se existirem)
   if (resp.acao === 'dancar') startDance(6);
   if (resp.acao === 'dormir') { S.energia = clamp(S.energia + 10); save(); }
   if (resp.acao === 'comer') { foodTray(); }
