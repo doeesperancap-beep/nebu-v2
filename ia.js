@@ -99,13 +99,26 @@ async function chamarIA(textoUsuario) {
 function aplicarResposta(resp) {
   if (!resp || !resp.fala) return;
   
-  const tempoTotal = Math.max(4000, resp.fala.length * 90); 
-  const tempoPorRosto = tempoTotal / resp.expressoes.length;
+  // 1. Parte que troca o rosto
+  const validas = ['neutral','happy','sad','angry','curious','sleepy','carinho','surprised','sick','bored','dance'];
+  let lista = (resp.expressoes || []).filter(e => validas.includes(e));
+  if (lista.length === 0) lista = ['neutral'];
 
-  resp.expressoes.forEach((expressao, index) => {
+  const tempoTotal = Math.max(4000, resp.fala.length * 90); 
+  const tempoPorRosto = tempoTotal / lista.length;
+
+  lista.forEach((expressao, index) => {
     setTimeout(() => {
-      // Mostra a fala só na primeira expressão
       set(expressao, tempoPorRosto, index === 0 ? resp.fala : '');
     }, index * tempoPorRosto);
   });
-}
+
+  // 2. Parte que executa as ações (O que você colou)
+  if (resp.acao === 'dancar') startDance(6);
+  if (resp.acao === 'dormir') { S.energia = clamp(S.energia + 10); save(); }
+  if (resp.acao === 'comer') { foodTray(); }
+  
+  if (resp.acao === 'estudar_25') iniciarCronometro(25);
+  if (resp.acao === 'estudar_5') iniciarCronometro(5);
+  if (resp.acao === 'parar_foco') pararCronometro();
+} // <--- ESSA CHAVE FECHA A FUNÇÃO, NÃO ESQUEÇA DELA!
