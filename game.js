@@ -4703,3 +4703,76 @@ $('bVoz').onclick = () => {
   if (ouvindo) pararVoz();
   else iniciarVoz('passivo'); 
 };
+
+/* ============================================================
+   MODO FOCO / CRONÔMETRO
+   ============================================================ */
+let timerFoco = null;
+let segundosRestantes = 0;
+
+function iniciarCronometro(minutos) {
+  if (timerFoco) clearInterval(timerFoco); // Limpa timer anterior
+  
+  segundosRestantes = minutos * 60;
+  P.classList.remove('on');
+  
+  // Cria a tela de foco
+  let telaFoco = document.getElementById('tela-foco');
+  if (!telaFoco) {
+    telaFoco = document.createElement('div');
+    telaFoco.id = 'tela-foco';
+    telaFoco.style.cssText = `
+      position: fixed; inset: 0; background: #1b1824ee;
+      z-index: 100; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; color: #fff;
+      font-family: system-ui, sans-serif; backdrop-filter: blur(5px);
+    `;
+    document.body.appendChild(telaFoco);
+  }
+
+  const atualizarVisor = () => {
+    const m = Math.floor(segundosRestantes / 60);
+    const s = segundosRestantes % 60;
+    telaFoco.innerHTML = `
+      <h1 style="font-size: 24px; color: #f7d9e4; margin-bottom: 10px;">Modo Foco ⏱️</h1>
+      <div style="font-size: 70px; font-weight: bold; font-variant-numeric: tabular-nums;">
+        ${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}
+      </div>
+      <p style="opacity: 0.6; margin-top: 20px;">A Nebo está estudando com você...</p>
+      <button id="btnPararFoco" style="margin-top: 30px; padding: 12px 24px; border-radius: 20px; border: 0; background: #ffb3b3; color: #1b1824; font-weight: bold;">Cancelar Foco</button>
+    `;
+    
+    document.getElementById('btnPararFoco').onclick = pararCronometro;
+  };
+
+  atualizarVisor();
+  set('curious', minutos * 60000, 'Vou ficar quietinha te ajudando...'); // Fica de olho
+
+  timerFoco = setInterval(() => {
+    segundosRestantes--;
+    if (segundosRestantes <= 0) {
+      clearInterval(timerFoco);
+      timerFoco = null;
+      if (document.getElementById('tela-foco')) document.getElementById('tela-foco').remove();
+      
+      // Fim do foco!
+      S.humor = clamp(S.humor + 15);
+      S.energia = clamp(S.energia + 10);
+      ganharMoedas(20); // Recompensa por estudar!
+      save();
+      SOM.melodia([N.DO, N.MI, N.SOL, N.DO2], 0.15, 'sine', 0.15);
+      set('happy', 5000, 'Você conseguiu! Estudamos juntos! 💗 +20 moedas');
+    } else {
+      atualizarVisor();
+    }
+  }, 1000);
+}
+
+function pararCronometro() {
+  if (timerFoco) clearInterval(timerFoco);
+  timerFoco = null;
+  const el = document.getElementById('tela-foco');
+  if (el) el.remove();
+  say('Foco cancelado. 😌');
+  set('neutral', 3000);
+}
