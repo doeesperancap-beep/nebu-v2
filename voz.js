@@ -1,12 +1,13 @@
 /* ============================================================
-   voz.js — A Nebo escuta (Modo Passivo e Ativo)
+   voz.js — A Nebo escuta (Modo Passivo e Ativo Inteligente)
    ============================================================ */
 
 let reconhecimento = null;
 let ouvindo = false;
-let modoPassivo = false; // Fica escutando o nome dela
+let modoPassivo = false; 
+let timerSilencio = null;
 
-function iniciarVoz(modo = 'ativo') {
+function iniciarVoz(modo = 'passivo') {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
     say('Meu ouvido não funciona nesse navegador... 😢');
@@ -19,42 +20,60 @@ function iniciarVoz(modo = 'ativo') {
   
   reconhecimento = new SR();
   reconhecimento.lang = 'pt-BR';
-  reconhecimento.continuous = true; // Fica ligado o tempo todo
-  reconhecimento.interimResults = true; // Ouve enquanto você fala (mais rápido)
+  reconhecimento.continuous = true; 
+  reconhecimento.interimResults = true; 
 
   reconhecimento.onresult = async (e) => {
     const resultadoAtual = e.results[e.results.length - 1];
-    const texto = resultadoAtual[0].transcript.trim().toLowerCase();
+    const texto = resultadoAtual[0].transcript.trim();
+    const textoLower = texto.toLowerCase();
 
     // Se estiver no modo passivo, só responde se ouvir o nome dela
     if (modoPassivo) {
-      if (!resultadoAtual.isFinal) return; // Espera você terminar a frase
+      if (!resultadoAtual.isFinal) return; 
       
-      if (texto.includes('nebo') || texto.includes('nebulosa')) {
+      // Pega o nome que você deu pra ela no início
+      const nomeDela = (S.nome || 'nebo').toLowerCase(); 
+      
+      if (textoLower.includes(nomeDela) || textoLower.includes('nebo') || textoLower.includes('nebulosa')) {
         modoPassivo = false; // Acordou! Muda pro modo ativo
-        say('Oi! 👀'); 
+        say('Oi! Pode falar. 👂'); 
         atualizarBotaoVoz();
-        // Aqui você pode chamar a IA se quiser que ela responda à saudação
+        return; // Espera a próxima frase que ela vai falar
       }
       return; 
     }
 
-    // Modo Ativo: ela ouve a pergunta e responde
+    // Modo Ativo: Ela ouviu o nome e agora vai ouvir a pergunta
     if (!resultadoAtual.isFinal) return; 
 
-    if (!texto) return;
+    // Se a pessoa não falou nada ou só gaguejou
+    if (!texto || texto.length < 2) return;
+    
+    // Se ela ainda estiver com o microfone ligado, limpa o timer de silêncio
+    clearTimeout(timerSilencio);
     
     reconhecimento.stop(); // Pausa o microfone enquanto ela pensa
-    set('curious', 3000, '🤔 ...');
+    set('curious', 4000, '🤔 ...');
     
-    const resp = await chamarIA(texto);
+    // 👇 REMOVE O NOME DELA DA PERGUNTA (pra IA não ficar confusa)
+    const nomeDela = (S.nome || 'nebo').toLowerCase();
+    const perguntaLimpa = texto.replace(new RegExp(nomeDela, 'gi'), '').replace(/nebo|nebulosa/gi, '').trim();
+
+    // Se depois de tirar o nome a frase ficou vazia (ex: só falou "Nebo")
+    if (!perguntaLimpa) {
+      setTimeout(() => { if (!ouvindo) iniciarVoz('passivo'); }, 2000);
+      return;
+    }
+    
+    const resp = await chamarIA(perguntaLimpa);
     aplicarResposta(resp);
     falar(resp.fala);
 
     // Depois que ela fala, volta pro modo passivo
     setTimeout(() => {
       if (!ouvindo) iniciarVoz('passivo');
-    }, 4000);
+    }, 5000); // 5 segundos pra ela terminar de falar e voltar a ouvir
   };
 
   reconhecimento.onerror = (e) => { 
@@ -67,16 +86,26 @@ function iniciarVoz(modo = 'ativo') {
   
   reconhecimento.onend = () => { 
     if (ouvindo) {
-      // Se o navegador derrubar, tenta ligar de novo se ainda estiver no modo
       try { reconhecimento.start(); } catch(e) {}
     }
   };
 
+  // Timer de silêncio: se ela ficar 5 segundos sem ouvir nada no modo ativo, desliga.
+  function resetarTimer() {
+    clearTimeout(timerSilencio);
+    timerSilencio = setTimeout(() => {
+      if (!modoPassivo && ouvindo) {
+        say('Acho que você não precisa de mim agora. Vou dormir. 😴');
+        pararVoz();
+      }
+    }, 5000);
+  }
+
   try {
     reconhecimento.start();
     ouvindo = true;
-    if (modoPassivo) say('Tô de olho... diga meu nome se precisar. 👀');
-    else say('Tô ouvindo... 👂'); 
+    if (modoPassivo) say(`Tô de olho... diga "${S.nome || 'Nebo'}" se precisar. 👀`);
+    else { say('Tô ouvindo... 👂'); resetarTimer(); }
     atualizarBotaoVoz();
   } catch(e) {
     console.error(e);
@@ -86,6 +115,8 @@ function iniciarVoz(modo = 'ativo') {
 
 function pararVoz() {
   ouvindo = false;
+  modoPassivo = false;
+  clearTimeout(timerSilencio);
   if (reconhecimento) {
     try { reconhecimento.stop(); } catch(e) {}
   }
@@ -117,7 +148,7 @@ function atualizarBotaoVoz() {
   if (!btn) return;
   if (ouvindo) {
     btn.style.background = modoPassivo ? '#ffd580' : '#ffb3b3';
-    btn.textContent = modoPassivo ? '👂 Escutando...' : '🔴 Ouvindo...';
+    btn.textContent = modoPassivo ? `👂 Diga "${S.nome || 'Nebo'}"` : '🔴 Ouvindo...';
   } else {
     btn.style.background = '#ffffff14';
     btn.textContent = '🎤 Falar';
