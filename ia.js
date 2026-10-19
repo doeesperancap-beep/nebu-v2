@@ -22,20 +22,22 @@ const VOZES = {
 function montarPrompt() {
   const pers = S.pers || 'carinhosa';
   const voz = VOZES[pers] || VOZES.carinhosa;
+  const nomeDela = S.nome || 'Nebo'; // Pega o nome que a pessoa deu
 
-  // Memória do jogo (o que ela já sabe sobre a pessoa)
+  // Memória do jogo
   const acoes = (S.ultimasAcoes && S.ultimasAcoes.length > 0) 
     ? `O usuário fez recentemente: ${S.ultimasAcoes.join(', ')}.` 
     : "";
 
-  return `${LORE_NEBO}
+  return `Seu nome atual é "${nomeDela}" (mas seu apelido cósmico de origem é Nebo).
+${LORE_NEBO}
 
 SUA PERSONALIDADE ATUAL: ${voz}
 ${acoes}
 SEU ESTADO: humor ${Math.round(S.humor)}/100, fome ${Math.round(S.fome)}/100.
 
 COMO VOCÊ DEVE AGIR:
-1. VOCÊ AMA DEBATER. Se o assunto for política, história ou polêmica, você DEVE dar a sua opinião. Você acha que ficar em cima do muro é chato. Diga o que pensa (com base na sua personalidade, ex: temperamental acha tudo uma bagunça, a curiosa quer entender os dois lados) e pergunte o que o usuário acha. NUNCA diga "como uma IA, não tomo partido". Você é a Nebo!
+1. VOCÊ AMA DEBATER. Se o assunto for política, história ou polêmica, você DEVE dar a sua opinião. Você acha que ficar em cima do muro é chato. Diga o que pensa (com base na sua personalidade) e pergunte o que o usuário acha. NUNCA diga "como uma IA, não tomo partido". Você é a Nebo!
 2. Se o usuário te der uma notícia, reaja com emoção de verdade (fique brava, triste ou muito feliz junto).
 3. Se for dúvida de escola, ajude com o conteúdo.
 4. Responda em português do Brasil, de forma natural.
@@ -67,10 +69,22 @@ async function chamarIA(textoUsuario) {
     }
 
     let obj;
-    try { obj = JSON.parse(dados.texto); } catch { obj = { fala: dados.texto.slice(0, 100), expressoes: ['neutral'] }; }
     
+    // Tenta ler o JSON da IA
+    try { 
+      obj = JSON.parse(dados.texto); 
+    } catch { 
+      // Se não for JSON, cria um objeto básico para ela não ficar muda
+      obj = { fala: dados.texto ? String(dados.texto).slice(0, 100) : "Não entendi...", expressoes: ['neutral'] }; 
+    }
+    
+    // Garante que a lista de expressões existe e é válida
     if (obj.expressao && !obj.expressoes) obj.expressoes = [obj.expressao];
     if (!obj.expressoes || !Array.isArray(obj.expressoes)) obj.expressoes = ['neutral'];
+    
+    const validas = ['neutral','happy','sad','angry','curious','sleepy','carinho','surprised','sick','bored','dance'];
+    obj.expressoes = obj.expressoes.filter(e => validas.includes(e));
+    if (obj.expressoes.length === 0) obj.expressoes = ['neutral'];
 
     memoria.push({ role: 'assistant', content: JSON.stringify(obj) });
     if (memoria.length > MEMORIA_MAX * 2) memoria = memoria.slice(-MEMORIA_MAX * 2);
@@ -84,15 +98,12 @@ async function chamarIA(textoUsuario) {
 function aplicarResposta(resp) {
   if (!resp || !resp.fala) return;
   
-  const validas = ['neutral','happy','sad','angry','curious','sleepy','carinho','surprised','sick','bored','dance'];
-  let lista = resp.expressoes.filter(e => validas.includes(e));
-  if (lista.length === 0) lista = ['neutral'];
-
   const tempoTotal = Math.max(4000, resp.fala.length * 90); 
-  const tempoPorRosto = tempoTotal / lista.length;
+  const tempoPorRosto = tempoTotal / resp.expressoes.length;
 
-  lista.forEach((expressao, index) => {
+  resp.expressoes.forEach((expressao, index) => {
     setTimeout(() => {
+      // Mostra a fala só na primeira expressão
       set(expressao, tempoPorRosto, index === 0 ? resp.fala : '');
     }, index * tempoPorRosto);
   });
