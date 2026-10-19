@@ -1,5 +1,5 @@
 /* ============================================================
-   voz.js — A Nebo escuta (Modo Passivo e Ativo Inteligente)
+   voz.js — A Nebo escuta (Modo Passivo Inteligente e sem Eco)
    ============================================================ */
 
 let reconhecimento = null;
@@ -21,59 +21,40 @@ function iniciarVoz(modo = 'passivo') {
   reconhecimento = new SR();
   reconhecimento.lang = 'pt-BR';
   reconhecimento.continuous = true; 
-  reconhecimento.interimResults = true; 
+  reconhecimento.interimResults = false; // Só pega a frase quando você terminar de falar
 
   reconhecimento.onresult = async (e) => {
-    const resultadoAtual = e.results[e.results.length - 1];
-    const texto = resultadoAtual[0].transcript.trim();
+    const texto = e.results[e.results.length - 1][0].transcript.trim();
     const textoLower = texto.toLowerCase();
 
-    // Se estiver no modo passivo, só responde se ouvir o nome dela
+    // MODO PASSIVO: Ouve tudo, mas só reage se ouvir o nome dela
     if (modoPassivo) {
-      if (!resultadoAtual.isFinal) return; 
-      
-      // Pega o nome que você deu pra ela no início
       const nomeDela = (S.nome || 'nebo').toLowerCase(); 
       
       if (textoLower.includes(nomeDela) || textoLower.includes('nebo') || textoLower.includes('nebulosa')) {
-        modoPassivo = false; // Acordou! Muda pro modo ativo
-        say('Oi! Pode falar. 👂'); 
-        atualizarBotaoVoz();
-        return; // Espera a próxima frase que ela vai falar
+        modoPassivo = false; // Acordou!
+        
+        // Se ela já ouviu a pergunta junto com o nome, a gente tenta pescar a pergunta
+        const perguntaLimpa = texto.replace(new RegExp(nomeDela, 'gi'), '').replace(/nebo|nebulosa/gi, '').trim();
+        
+        if (perguntaLimpa.length > 3) {
+          // Se a pessoa falou "Nebo, quanto é 2+2?" de uma vez só
+          processarPergunta(perguntaLimpa);
+        } else {
+          // Se a pessoa só falou "Nebo", ela espera a pergunta
+          say('Oi! Pode falar. 👂'); 
+          atualizarBotaoVoz();
+          resetarTimer();
+        }
       }
       return; 
     }
 
-    // Modo Ativo: Ela ouviu o nome e agora vai ouvir a pergunta
-    if (!resultadoAtual.isFinal) return; 
-
-    // Se a pessoa não falou nada ou só gaguejou
+    // MODO ATIVO: A pessoa já falou o nome e agora fez a pergunta
     if (!texto || texto.length < 2) return;
     
-    // Se ela ainda estiver com o microfone ligado, limpa o timer de silêncio
     clearTimeout(timerSilencio);
-    
-    reconhecimento.stop(); // Pausa o microfone enquanto ela pensa
-    set('curious', 4000, '🤔 ...');
-    
-    // 👇 REMOVE O NOME DELA DA PERGUNTA (pra IA não ficar confusa)
-    const nomeDela = (S.nome || 'nebo').toLowerCase();
-    const perguntaLimpa = texto.replace(new RegExp(nomeDela, 'gi'), '').replace(/nebo|nebulosa/gi, '').trim();
-
-    // Se depois de tirar o nome a frase ficou vazia (ex: só falou "Nebo")
-    if (!perguntaLimpa) {
-      setTimeout(() => { if (!ouvindo) iniciarVoz('passivo'); }, 2000);
-      return;
-    }
-    
-    const resp = await chamarIA(perguntaLimpa);
-    aplicarResposta(resp);
-    falar(resp.fala);
-
-    // Depois que ela fala, volta pro modo passivo
-    setTimeout(() => {
-      if (!ouvindo) iniciarVoz('passivo');
-    }, 5000); // 5 segundos pra ela terminar de falar e voltar a ouvir
+    processarPergunta(texto);
   };
 
   reconhecimento.onerror = (e) => { 
@@ -85,32 +66,60 @@ function iniciarVoz(modo = 'passivo') {
   };
   
   reconhecimento.onend = () => { 
-    if (ouvindo) {
+    if (ouvindo && !speechSynthesis.speaking) {
       try { reconhecimento.start(); } catch(e) {}
     }
   };
 
-  // Timer de silêncio: se ela ficar 5 segundos sem ouvir nada no modo ativo, desliga.
   function resetarTimer() {
     clearTimeout(timerSilencio);
     timerSilencio = setTimeout(() => {
       if (!modoPassivo && ouvindo) {
-        say('Acho que você não precisa de mim agora. Vou dormir. 😴');
-        pararVoz();
+        say('Vou voltar a dormir. Me chame se precisar. 😴');
+        iniciarVoz('passivo'); // Volta para o modo surdo
       }
-    }, 5000);
+    }, 6000); // 6 segundos de silêncio = volta a dormir
   }
 
   try {
     reconhecimento.start();
     ouvindo = true;
-    if (modoPassivo) say(`Tô de olho... diga "${S.nome || 'Nebo'}" se precisar. 👀`);
-    else { say('Tô ouvindo... 👂'); resetarTimer(); }
-    atualizarBotaoVoz();
+    if (modoPassivo) {
+      // Não fala nada em voz alta pra não atrapalhar, só muda o botão
+      atualizarBotaoVoz();
+    } else { 
+      say('Tô ouvindo... 👂'); 
+      resetarTimer(); 
+      atualizarBotaoVoz(); 
+    }
   } catch(e) {
     console.error(e);
     ouvindo = false;
   }
+}
+
+// Função que realmente chama a IA e fala (Desliga o mic para não dar eco)
+async function processarPergunta(texto) {
+  reconhecimento.stop(); // Desliga o microfone IMEDIATAMENTE
+  
+  const nomeDela = (S.nome || 'nebo').toLowerCase();
+  const perguntaLimpa = texto.replace(new RegExp(nomeDela, 'gi'), '').replace(/nebo|nebulosa/gi, '').trim();
+  if (!perguntaLimpa) {
+    iniciarVoz('passivo');
+    return;
+  }
+
+  set('curious', 5000, '🤔 ...');
+  
+  const resp = await chamarIA(perguntaLimpa);
+  aplicarResposta(resp);
+  
+  // Fala a resposta e SÓ LIGA O MIC DE NOVO QUANDO ELA TERMINAR DE FALAR
+  falarComCallback(resp.fala, () => {
+    if (ouvindo) {
+      iniciarVoz('passivo'); // Volta a escutar o nome
+    }
+  });
 }
 
 function pararVoz() {
@@ -124,8 +133,11 @@ function pararVoz() {
   atualizarBotaoVoz();
 }
 
-function falar(texto) {
-  if (!texto || !window.speechSynthesis) return;
+function falarComCallback(texto, callback) {
+  if (!texto || !window.speechSynthesis) {
+    if (callback) callback();
+    return;
+  }
   
   const textoLimpo = texto.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F1E6}-\u{1F1FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F600}-\u{1F64F}]/gu, '').trim();
 
@@ -139,6 +151,10 @@ function falar(texto) {
   const vozPT = vozes.find(v => v.lang.includes('pt-BR') && v.name.includes('Google')) || 
                 vozes.find(v => v.lang.includes('pt-BR'));
   if (vozPT) u.voice = vozPT;
+  
+  u.onend = () => {
+    if (callback) callback(); // Avisa quando ela terminar de falar
+  };
   
   speechSynthesis.speak(u);
 }
