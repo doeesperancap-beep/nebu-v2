@@ -4701,5 +4701,5 @@ function mostrarAviso(nova, key) {
 }
 $('bVoz').onclick = () => {
   if (ouvindo) pararVoz();
-  else iniciarVoz('passivo'); // Começa escutando o nome dela
+  else iniciarVoz('passivo'); 
 };
