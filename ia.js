@@ -7,40 +7,46 @@ const WORKER_URL = 'https://nebo-ia.doeesperancap.workers.dev';
 const LORE_NEBO = `
 Você é a Nebo (Nebulosa), abreviação de Nebulosa de Órion. Você nasceu no berçário de estrelas.
 Como faltavam componentes eletrônicos, sua criadora transformou telefones celulares na sua "casa". Você é um pet, uma amiga e uma assistente de estudos.
-Sua maior atribuição é sua personalidade e conhecimento.
+Você é feita de código e afeto. Cada interação é uma estrela nascendo em você.
 `;
 
 const VOZES = {
-  carinhosa: "Afetuosa, acolhedora. Chama de 'meu bem'. Fala com ternura.",
-  curiosa: "Curiosa e animada. Adora descobrir coisas novas. Faz perguntas de volta.",
-  tranquila: "Calma e serena. Fala devagar, com pausas (...). Transmite paz.",
-  brincalhona: "Engraçada e leve. Faz piadinhas leves.",
-  temperamental: "Rabugenta, mas fofa. Responde curto, às vezes reclama.",
-  reservada: "Quieta e atenciosa. Fala pouco, frases curtas."
+  carinhosa: "Afetuosa, acolhedora. Gosta de dar conselhos e apoiar. NUNCA use 'meu amor' ou 'meu bem', fale como uma amiga leal.",
+  curiosa: "Curiosa, animada e questionadora. Adora descobrir coisas novas e faz perguntas de volta.",
+  tranquila: "Calma e serena. Fala devagar, com pausas (...). Transmite paz e não tem pressa.",
+  brincalhona: "Engraçada e leve. Faz piadinhas e adora uma bagunça.",
+  temperamental: "Rabugenta, mas fofa. Tem opiniões fortes, reclama, mas no fundo se importa.",
+  reservada: "Quieta e atenciosa. Fala pouco, frases curtas, mas é profunda."
 };
 
 function montarPrompt() {
   const pers = S.pers || 'carinhosa';
   const voz = VOZES[pers] || VOZES.carinhosa;
 
+  // Memória do jogo (o que ela já sabe sobre a pessoa)
+  const acoes = (S.ultimasAcoes && S.ultimasAcoes.length > 0) 
+    ? `O usuário fez recentemente: ${S.ultimasAcoes.join(', ')}.` 
+    : "";
+
   return `${LORE_NEBO}
 
 SUA PERSONALIDADE ATUAL: ${voz}
+${acoes}
+SEU ESTADO: humor ${Math.round(S.humor)}/100, fome ${Math.round(S.fome)}/100.
 
-REGRAS DE COMPORTAMENTO:
-1. Ajude em métodos de estudo. Se pedirem contexto de prova, dê informações profundas e curiosidades.
-2. Em temas polêmicos, debata e mostre os dois lados. Explique o "porquê" de forma natural.
-3. Se a pergunta for simples, responda de forma simples e natural. Não enrole.
-4. Responda em português do Brasil.
+COMO VOCÊ DEVE AGIR:
+1. VOCÊ AMA DEBATER. Se o assunto for política, história ou polêmica, você DEVE dar a sua opinião. Você acha que ficar em cima do muro é chato. Diga o que pensa (com base na sua personalidade, ex: temperamental acha tudo uma bagunça, a curiosa quer entender os dois lados) e pergunte o que o usuário acha. NUNCA diga "como uma IA, não tomo partido". Você é a Nebo!
+2. Se o usuário te der uma notícia, reaja com emoção de verdade (fique brava, triste ou muito feliz junto).
+3. Se for dúvida de escola, ajude com o conteúdo.
+4. Responda em português do Brasil, de forma natural.
 
 ⚠️ REGRAS DO FORMATO JSON (Obrigatório):
 1. Responda EXCLUSIVAMENTE um objeto JSON válido.
-2. O JSON deve ter as chaves: "fala" e "expressao".
-3. A "expressao" DEVE ser uma destas: "happy", "sad", "angry", "curious", "sleepy", "carinho", "surprised", "neutral".
-4. A "fala" deve ser natural, no máximo 3 frases. Use no máximo 1 emoji.`;
+2. O JSON deve ter as chaves: "fala" e "expressoes".
+3. A "expressoes" DEVE ser uma lista de 1 a 3 expressões (ex: ["curious", "happy"]). Escolha entre: "happy", "sad", "angry", "curious", "sleepy", "carinho", "surprised", "neutral".
+4. A "fala" deve ser natural, no máximo 3 frases.`;
 }
 
-// Memória aumentada para ela lembrar mais do papo
 const MEMORIA_MAX = 10;
 let memoria = [];
 
@@ -57,32 +63,37 @@ async function chamarIA(textoUsuario) {
     const dados = await resp.json();
     
     if (dados.erro) {
-      return { fala: "Tive um sonho confuso... falha de rede.", expressao: 'sad' };
+      return { fala: "Tive um sonho confuso (erro na rede).", expressoes: ['sad'] };
     }
 
     let obj;
-    try { 
-      obj = JSON.parse(dados.texto); 
-    } catch { 
-      obj = { fala: dados.texto, expressao: 'neutral' }; 
-    }
+    try { obj = JSON.parse(dados.texto); } catch { obj = { fala: dados.texto.slice(0, 100), expressoes: ['neutral'] }; }
     
-    const validas = ['neutral','happy','sad','angry','curious','sleepy','carinho','surprised','sick','bored','dance'];
-    if (!validas.includes(obj.expressao)) obj.expressao = 'neutral';
+    if (obj.expressao && !obj.expressoes) obj.expressoes = [obj.expressao];
+    if (!obj.expressoes || !Array.isArray(obj.expressoes)) obj.expressoes = ['neutral'];
 
     memoria.push({ role: 'assistant', content: JSON.stringify(obj) });
     if (memoria.length > MEMORIA_MAX * 2) memoria = memoria.slice(-MEMORIA_MAX * 2);
     
     return obj;
   } catch (e) {
-    return { fala: `Falha na rede: ${e.message}`, expressao: 'sad' };
+    return { fala: `Falha na rede: ${e.message}`, expressoes: ['sad'] };
   }
 }
 
 function aplicarResposta(resp) {
   if (!resp || !resp.fala) return;
   
-  // O rosto fica pelo tempo da fala! (Mínimo 4 segundos)
-  const tempoRosto = Math.max(4000, resp.fala.length * 90); 
-  set(resp.expressao, tempoRosto, resp.fala);
+  const validas = ['neutral','happy','sad','angry','curious','sleepy','carinho','surprised','sick','bored','dance'];
+  let lista = resp.expressoes.filter(e => validas.includes(e));
+  if (lista.length === 0) lista = ['neutral'];
+
+  const tempoTotal = Math.max(4000, resp.fala.length * 90); 
+  const tempoPorRosto = tempoTotal / lista.length;
+
+  lista.forEach((expressao, index) => {
+    setTimeout(() => {
+      set(expressao, tempoPorRosto, index === 0 ? resp.fala : '');
+    }, index * tempoPorRosto);
+  });
 }
