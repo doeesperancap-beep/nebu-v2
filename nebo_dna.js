@@ -17,7 +17,6 @@ const NEBO_PERSONALIDADES = {
 };
 
 // 🧠 MEMÓRIA DE LONGO PRAZO DA NEBO
-// (Isso fica salvo para sempre e a IA lê sempre que for responder)
 function lerMemoriaNebo() {
   if (!S.memoriaIA) {
     S.memoriaIA = {
@@ -31,9 +30,10 @@ function lerMemoriaNebo() {
 
 function adicionarMemoria(tipo, texto) {
   const mem = lerMemoriaNebo();
+  if (!mem[tipo]) mem[tipo] = [];
   if (!mem[tipo].includes(texto)) {
     mem[tipo].push(texto);
-    save(); // Salva no celular
+    if (typeof save === 'function') save(); // Garante que não vai dar erro se save não existir
   }
 }
 
