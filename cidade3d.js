@@ -1,196 +1,294 @@
 
-/* CIDADE NEBO — versão 1
-   Cidade 3D pastel com prédios identificados.
-   A cidade é um painel: não há botão para construir.
-*/
+/* CIDADE NEBO — visual low-poly suave */
 (() => {
   if (window.__nebulaCity3DLoaded) return;
   window.__nebulaCity3DLoaded = true;
 
-  let scene, camera, renderer, controls, cityRoot;
+  let scene, camera, renderer, controls, root;
   let iniciado = false;
   const predios = [];
-  const cores = [
-    '#f6aeca', '#b6a5f4', '#ffd38e',
-    '#8fd8c9', '#a9d5f7', '#f5b59c'
-  ];
+  const coresCasa = ['#f0eee2', '#e8e7dc', '#f5f0e5', '#dfe5df'];
 
-  function criarNome(nome) {
+  function material(cor, extra = {}) {
+    return new THREE.MeshStandardMaterial({
+      color: cor, roughness: 1, metalness: 0, ...extra
+    });
+  }
+
+  function nomePlaca(nome) {
     const canvas = document.createElement('canvas');
-    canvas.width = 512;
-    canvas.height = 128;
-
+    canvas.width = 512; canvas.height = 112;
     const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fffaf0';
-    ctx.beginPath();
-    ctx.roundRect(8, 12, 496, 104, 24);
-    ctx.fill();
-
-    ctx.fillStyle = '#513c63';
-    ctx.font = 'bold 34px system-ui';
-    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath(); ctx.roundRect(8, 8, 496, 96, 28); ctx.fill();
+    ctx.strokeStyle = '#202631'; ctx.lineWidth = 10; ctx.stroke();
+    ctx.fillStyle = '#202631';
+    ctx.font = 'bold 34px system-ui'; ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(String(nome || 'Imóvel').slice(0, 22), 256, 64, 460);
-
-    const textura = new THREE.CanvasTexture(canvas);
-    const sprite = new THREE.Sprite(
-      new THREE.SpriteMaterial({
-        map: textura,
-        transparent: true,
-        depthTest: false
-      })
-    );
-
-    sprite.scale.set(4.8, 1.2, 1);
+    ctx.fillText(String(nome || 'Imóvel').slice(0, 22), 256, 56, 450);
+    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+      map: new THREE.CanvasTexture(canvas), transparent: true,
+      depthTest: false
+    }));
+    sprite.scale.set(5.5, 1.2, 1);
     return sprite;
   }
 
   function criarPredio(dados, x, z, indice = 0) {
     const grupo = new THREE.Group();
     grupo.position.set(x, 0, z);
-
     const tipo = dados.tipo || 'casa';
-    const altura = tipo === 'observatorio'
-      ? 5.4
-      : ['biblioteca', 'escola', 'laboratorio', 'museu'].includes(tipo)
-        ? 4
-        : 3;
+    const alto = tipo === 'observatorio' ? 9 :
+      ['biblioteca', 'escola', 'laboratorio', 'museu'].includes(tipo) ? 6 : 3.2;
+    const torre = alto > 5;
+    const largura = torre ? 2.8 : 3.2;
+    const profundidade = torre ? 2.8 : 3;
+    const cor = torre ? (indice % 2 ? '#e7e7df' : '#d9dedb') :
+      (dados.cor && !String(dados.cor).startsWith('#f') ? dados.cor : coresCasa[indice % coresCasa.length]);
 
     const corpo = new THREE.Mesh(
-      new THREE.BoxGeometry(3.1, altura, 2.8),
-      new THREE.MeshStandardMaterial({
-        color: dados.cor || cores[indice % cores.length],
-        roughness: 0.88
-      })
+      new THREE.BoxGeometry(largura, alto, profundidade), material(cor)
     );
-
-    corpo.position.y = altura / 2;
-    corpo.castShadow = true;
-    corpo.receiveShadow = true;
+    corpo.position.y = alto / 2;
+    corpo.castShadow = true; corpo.receiveShadow = true;
     grupo.add(corpo);
 
-    const telhado = new THREE.Mesh(
-      new THREE.ConeGeometry(2.3, 1.2, 4),
-      new THREE.MeshStandardMaterial({
-        color: ['#956d93', '#a76572', '#7188a8', '#b17e4e'][indice % 4]
-      })
-    );
-
-    telhado.position.y = altura + 0.45;
-    telhado.rotation.y = Math.PI / 4;
-    grupo.add(telhado);
-
-    const porta = new THREE.Mesh(
-      new THREE.BoxGeometry(0.52, 1.1, 0.08),
-      new THREE.MeshStandardMaterial({ color: '#795b4b' })
-    );
-    porta.position.set(0, 0.55, 1.45);
-    grupo.add(porta);
-
-    for (const xJanela of [-0.85, 0.85]) {
-      const janela = new THREE.Mesh(
-        new THREE.BoxGeometry(0.55, 0.55, 0.08),
-        new THREE.MeshStandardMaterial({ color: '#d8f4ff' })
+    if (!torre) {
+      const telhado = new THREE.Mesh(
+        new THREE.ConeGeometry(2.45, 1.25, 4),
+        material(['#d99b63', '#c98555', '#d9a66f', '#b87b54'][indice % 4])
       );
-      janela.position.set(xJanela, Math.min(altura - 0.65, 1.8), 1.45);
-      grupo.add(janela);
+      telhado.position.y = alto + 0.5;
+      telhado.rotation.y = Math.PI / 4;
+      telhado.castShadow = true;
+      grupo.add(telhado);
+
+      const porta = new THREE.Mesh(
+        new THREE.BoxGeometry(0.5, 1.05, 0.08), material('#8b725d')
+      );
+      porta.position.set(0, 0.53, profundidade / 2 + 0.045);
+      grupo.add(porta);
+
+      for (const wx of [-0.9, 0.9]) {
+        const janela = new THREE.Mesh(
+          new THREE.BoxGeometry(0.58, 0.58, 0.08), material('#82b9cc')
+        );
+        janela.position.set(wx, 1.9, profundidade / 2 + 0.05);
+        grupo.add(janela);
+      }
+    } else {
+      const andares = Math.floor(alto / 1.15);
+      for (let y = 0; y < andares; y++) {
+        for (const lado of [-1, 1]) {
+          const janela = new THREE.Mesh(
+            new THREE.BoxGeometry(0.68, 0.43, 0.06), material('#252d36')
+          );
+          janela.position.set(lado * 0.72, 0.7 + y * 1.05, profundidade / 2 + 0.04);
+          grupo.add(janela);
+        }
+        const faixa = new THREE.Mesh(
+          new THREE.BoxGeometry(largura + 0.08, 0.09, profundidade + 0.08),
+          material('#f5f0df')
+        );
+        faixa.position.y = 0.2 + y * 1.05;
+        grupo.add(faixa);
+      }
+      const topo = new THREE.Mesh(
+        new THREE.BoxGeometry(largura + 0.25, 0.25, profundidade + 0.25),
+        material('#c9cbc5')
+      );
+      topo.position.y = alto + 0.08;
+      grupo.add(topo);
     }
 
-    const placa = criarNome(dados.nome);
-    placa.position.y = altura + 1.6;
+    const placa = nomePlaca(dados.nome);
+    placa.position.y = alto + (torre ? 1.6 : 1.9);
     grupo.add(placa);
-
     grupo.userData.imovel = dados;
-    cityRoot.add(grupo);
+    root.add(grupo);
     predios.push(grupo);
   }
 
-  function criarArvore(x, z, tamanho = 1) {
+  function arvore(x, z, escala = 1) {
     const tronco = new THREE.Mesh(
-      new THREE.CylinderGeometry(
-        0.15 * tamanho,
-        0.22 * tamanho,
-        1.1 * tamanho,
-        7
-      ),
-      new THREE.MeshStandardMaterial({ color: '#9a704d' })
+      new THREE.CylinderGeometry(.12 * escala, .18 * escala, .75 * escala, 6),
+      material('#94704c')
     );
-
-    tronco.position.set(x, 0.55 * tamanho, z);
-    cityRoot.add(tronco);
+    tronco.position.set(x, .38 * escala, z);
+    root.add(tronco);
 
     const copa = new THREE.Mesh(
-      new THREE.SphereGeometry(0.78 * tamanho, 10, 8),
-      new THREE.MeshStandardMaterial({
-        color: ['#5fae78', '#78bd7b', '#8bc98a'][
-          Math.abs(Math.round(x + z)) % 3
-        ]
-      })
+      new THREE.DodecahedronGeometry(.62 * escala, 0),
+      material(['#63965a', '#76a565', '#82ad6c'][Math.abs(Math.round(x + z)) % 3])
     );
-
-    copa.position.set(x, 1.35 * tamanho, z);
+    copa.position.set(x, .95 * escala, z);
     copa.castShadow = true;
-    cityRoot.add(copa);
+    root.add(copa);
   }
 
-  function criarParque(x, z) {
-    const gramado = new THREE.Mesh(
-      new THREE.BoxGeometry(9, 0.12, 8),
-      new THREE.MeshStandardMaterial({ color: '#83c981' })
+  function rua(x, z, w, d) {
+    const mesh = new THREE.Mesh(
+      new THREE.BoxGeometry(w, .08, d), material('#777b7b')
     );
+    mesh.position.set(x, .015, z);
+    root.add(mesh);
+  }
 
-    gramado.position.set(x, 0.03, z);
-    cityRoot.add(gramado);
+  function montarCidade() {
+    if (iniciado || !window.THREE || !THREE.OrbitControls) return;
+    const area = document.getElementById('c3canvas');
+    if (!area) return;
+    iniciado = true;
 
-    for (const [dx, dz] of [
-      [-3, -2], [3, -2], [-3, 2], [3, 2]
-    ]) {
-      criarArvore(x + dx, z + dz, 0.8);
+    scene = new THREE.Scene();
+    scene.background = new THREE.Color('#b8d9e8');
+    scene.fog = new THREE.Fog('#b8d9e8', 90, 175);
+
+    camera = new THREE.PerspectiveCamera(42, 1, .1, 300);
+    camera.position.set(36, 34, 42);
+
+    renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    if ('outputColorSpace' in renderer && THREE.SRGBColorSpace)
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+    else if ('outputEncoding' in renderer && THREE.sRGBEncoding)
+      renderer.outputEncoding = THREE.sRGBEncoding;
+    area.appendChild(renderer.domElement);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = .07;
+    controls.maxPolarAngle = Math.PI / 2.08;
+    controls.minDistance = 15;
+    controls.maxDistance = 100;
+    controls.target.set(0, 0, 0);
+
+    scene.add(new THREE.HemisphereLight('#ffffff', '#78816b', 1.05));
+    const sol = new THREE.DirectionalLight('#fff4df', 1.25);
+    sol.position.set(-25, 42, 18);
+    sol.castShadow = true;
+    sol.shadow.mapSize.set(1024, 1024);
+    sol.shadow.camera.left = -65; sol.shadow.camera.right = 65;
+    sol.shadow.camera.top = 65; sol.shadow.camera.bottom = -65;
+    sol.shadow.bias = -.0005;
+    scene.add(sol);
+
+    root = new THREE.Group();
+    scene.add(root);
+
+    const chao = new THREE.Mesh(
+      new THREE.PlaneGeometry(150, 150),
+      material('#a9b875')
+    );
+    chao.rotation.x = -Math.PI / 2;
+    chao.position.y = -.06;
+    chao.receiveShadow = true;
+    root.add(chao);
+
+    // Ruas em quarteirões
+    [-30, -10, 10, 30].forEach(p => {
+      rua(p, 0, 3.6, 100);
+      rua(0, p, 100, 3.6);
+    });
+
+    // Calçadas discretas
+    [-30, -10, 10, 30].forEach(p => {
+      [-1, 1].forEach(s => {
+        const a = new THREE.Mesh(new THREE.BoxGeometry(.45, .1, 100), material('#c8c7b7'));
+        a.position.set(p + s * 2.05, .025, 0); root.add(a);
+        const b = new THREE.Mesh(new THREE.BoxGeometry(100, .1, .45), material('#c8c7b7'));
+        b.position.set(0, .025, p + s * 2.05); root.add(b);
+      });
+    });
+
+    // Construções e casinhas da cidade
+    const iniciais = [
+      { nome:'Biblioteca das Estrelas', tipo:'biblioteca', x:-20, z:-20 },
+      { nome:'Café das Nebos', tipo:'casa', x:0, z:-20 },
+      { nome:'Escola Nebular', tipo:'escola', x:20, z:-20 },
+      { nome:'Laboratório Criativo', tipo:'laboratorio', x:-20, z:0 },
+      { nome:'Observatório Orion', tipo:'observatorio', x:20, z:0 },
+      { nome:'Museu das Memórias', tipo:'museu', x:-20, z:20 },
+      { nome:'Casinha Lilás', tipo:'casa', x:0, z:20 },
+      { nome:'Ateliê das Cores', tipo:'casa', x:20, z:20 },
+      { nome:'Torre Central', tipo:'observatorio', x:0, z:0 }
+    ];
+    iniciais.forEach((p, i) => criarPredio(p, p.x, p.z, i));
+
+    // Árvores espalhadas, sem cobrir as ruas
+    for (let z = -44; z <= 44; z += 8) {
+      for (let x = -44; x <= 44; x += 8) {
+        if (Math.abs(x % 20) < 3 || Math.abs(z % 20) < 3) continue;
+        if (Math.abs(x) < 24 && Math.abs(z) < 24) continue;
+        arvore(x + ((z / 8) % 2) * 2, z, .7 + ((x + z) % 3 + 3) % 3 * .12);
+      }
     }
 
-    const caminho = new THREE.Mesh(
-      new THREE.BoxGeometry(1, 0.04, 5),
-      new THREE.MeshStandardMaterial({ color: '#e8d9bc' })
-    );
-
-    caminho.position.set(x, 0.11, z);
-    cityRoot.add(caminho);
+    renderer.domElement.addEventListener('click', clicarPredio);
+    window.addEventListener('resize', redimensionar);
+    redimensionar();
+    renderer.setAnimationLoop(() => {
+      controls.update();
+      renderer.render(scene, camera);
+    });
+    carregarImoveisCompartilhados();
+    atualizarContador();
   }
 
-  function criarRuas() {
-    const asfalto = new THREE.MeshStandardMaterial({ color: '#858d9b' });
-    const calcada = new THREE.MeshStandardMaterial({ color: '#f3e6d7' });
+  function redimensionar() {
+    if (!renderer || !camera) return;
+    const area = document.getElementById('c3canvas');
+    if (!area) return;
+    const w = area.clientWidth || innerWidth;
+    const h = area.clientHeight || innerHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  }
 
-    for (const p of [-16, 0, 16]) {
-      const vertical = new THREE.Mesh(
-        new THREE.BoxGeometry(4.2, 0.12, 70),
-        asfalto
-      );
-      vertical.position.set(p, 0.02, 0);
-      cityRoot.add(vertical);
+  function clicarPredio(evento) {
+    const rect = renderer.domElement.getBoundingClientRect();
+    const ponto = new THREE.Vector2(
+      ((evento.clientX - rect.left) / rect.width) * 2 - 1,
+      -((evento.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    const raio = new THREE.Raycaster();
+    raio.setFromCamera(ponto, camera);
+    const toque = raio.intersectObjects(predios, true)[0];
+    if (!toque) return;
+    let obj = toque.object;
+    while (obj && !obj.userData.imovel) obj = obj.parent;
+    if (!obj) return;
+    const imovel = obj.userData.imovel;
+    const info = document.getElementById('c3info');
+    if (!info) return;
+    info.querySelector('strong').textContent = imovel.nome || 'Imóvel';
+    info.querySelector('span').textContent =
+      (imovel.tipo || 'Construção') + (imovel.criador ? ' · por ' + imovel.criador : '');
+    info.hidden = false;
+  }
 
-      const horizontal = new THREE.Mesh(
-        new THREE.BoxGeometry(70, 0.12, 4.2),
-        asfalto
-      );
-      horizontal.position.set(0, 0.02, p);
-      cityRoot.add(horizontal);
-
-      for (const lado of [-1, 1]) {
-        const c1 = new THREE.Mesh(
-          new THREE.BoxGeometry(0.65, 0.16, 70),
-          calcada
-        );
-        c1.position.set(p + lado * 2.4, 0.02, 0);
-        cityRoot.add(c1);
-
-        const c2 = new THREE.Mesh(
-          new THREE.BoxGeometry(70, 0.16, 0.65),
-          calcada
-        );
-        c2.position.set(0, 0.02, p + lado * 2.4);
-        cityRoot.add(c2);
-      }
+  async function carregarImoveisCompartilhados() {
+    if (!window.firebase || typeof iniciarFirebase !== 'function') return;
+    try {
+      const db = iniciarFirebase();
+      if (!db) return;
+      const snapshot = await db.collection('cidade_imoveis').limit(80).get();
+      snapshot.forEach(doc => {
+        const dados = doc.data();
+        if (!dados || !dados.nome || predios.some(p => p.userData.imovel.id === doc.id)) return;
+        const i = predios.length;
+        const pos = [
+          [-40,-20],[-40,0],[-40,20],[40,-20],[40,0],[40,20],
+          [-20,-40],[0,-40],[20,-40],[-20,40],[0,40],[20,40]
+        ][(i - 9) % 12] || [((i % 5) - 2) * 9, (Math.floor(i / 5) - 2) * 9];
+        criarPredio({ ...dados, id: doc.id }, pos[0], pos[1], i);
+      });
+      atualizarContador();
+    } catch (e) {
+      console.warn('Não foi possível carregar os imóveis:', e);
     }
   }
 
@@ -199,280 +297,62 @@
     if (el) el.textContent = '🏘️ ' + predios.length + ' imóveis';
   }
 
-  function redimensionar() {
-    if (!renderer || !camera) return;
-
-    const area = document.getElementById('c3canvas');
-    if (!area) return;
-
-    const largura = area.clientWidth || innerWidth;
-    const altura = area.clientHeight || innerHeight;
-
-    camera.aspect = largura / altura;
-    camera.updateProjectionMatrix();
-    renderer.setSize(largura, altura);
-  }
-
-  function clicarPredio(evento) {
-    const rect = renderer.domElement.getBoundingClientRect();
-    const ponto = new THREE.Vector2(
-      ((evento.clientX - rect.left) / rect.width) * 2 - 1,
-      -(((evento.clientY - rect.top) / rect.height) * 2 - 1)
-    );
-
-    const raio = new THREE.Raycaster();
-    raio.setFromCamera(ponto, camera);
-
-    const toque = raio.intersectObjects(predios, true)[0];
-    if (!toque) return;
-
-    let objeto = toque.object;
-    while (objeto && !objeto.userData.imovel) {
-      objeto = objeto.parent;
-    }
-    if (!objeto) return;
-
-    const imovel = objeto.userData.imovel;
-    const info = document.getElementById('c3info');
-
-    info.querySelector('strong').textContent =
-      imovel.nome || 'Imóvel';
-
-    info.querySelector('span').textContent =
-      (imovel.tipo || 'Construção') +
-      (imovel.criador ? ' · por ' + imovel.criador : '');
-
-    info.hidden = false;
-  }
-
-  async function carregarImoveisCompartilhados() {
-    if (!window.firebase || typeof iniciarFirebase !== 'function') return;
-
-    try {
-      const db = iniciarFirebase();
-      if (!db) return;
-
-      const snapshot = await db.collection('cidade_imoveis')
-        .limit(80)
-        .get();
-
-      snapshot.forEach(doc => {
-        const dados = doc.data();
-        if (!dados || !dados.nome) return;
-
-        if (predios.some(p => p.userData.imovel.id === doc.id)) return;
-
-        const indice = predios.length;
-        const posicoes = [
-          [-25, -17], [-9, -25], [8, -25], [25, -17],
-          [-25, 17], [-9, 25], [8, 25], [25, 17],
-          [0, -31], [0, 31]
-        ];
-
-        const pos = posicoes[(indice - 8) % posicoes.length]
-          || [((indice % 5) - 2) * 8, (Math.floor(indice / 5) - 2) * 8];
-
-        criarPredio({ ...dados, id: doc.id }, pos[0], pos[1], indice);
-      });
-
-      atualizarContador();
-    } catch (erro) {
-      console.warn('Não foi possível carregar os imóveis:', erro);
-    }
-  }
-
-  function montarCidade() {
-    if (iniciado || !window.THREE) return;
-
-    const area = document.getElementById('c3canvas');
-    if (!area) return;
-
-    iniciado = true;
-
-    scene = new THREE.Scene();
-    scene.background = new THREE.Color('#c6e2f7');
-    scene.fog = new THREE.Fog('#c6e2f7', 55, 115);
-
-    camera = new THREE.PerspectiveCamera(48, 1, 0.1, 220);
-    camera.position.set(28, 28, 34);
-
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 1.8));
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-    if ('outputColorSpace' in renderer && THREE.SRGBColorSpace) {
-      renderer.outputColorSpace = THREE.SRGBColorSpace;
-    } else if ('outputEncoding' in renderer && THREE.sRGBEncoding) {
-      renderer.outputEncoding = THREE.sRGBEncoding;
-    }
-
-    area.appendChild(renderer.domElement);
-
-    controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.maxPolarAngle = Math.PI / 2.05;
-    controls.minDistance = 12;
-    controls.maxDistance = 75;
-    controls.target.set(0, 0, 0);
-
-    scene.add(new THREE.HemisphereLight('#fffaf0', '#78977e', 1.6));
-
-    const sol = new THREE.DirectionalLight('#fff0ce', 2.2);
-    sol.position.set(-18, 35, 20);
-    sol.castShadow = true;
-    sol.shadow.mapSize.set(1024, 1024);
-    scene.add(sol);
-
-    cityRoot = new THREE.Group();
-    scene.add(cityRoot);
-
-    const chao = new THREE.Mesh(
-      new THREE.PlaneGeometry(110, 110),
-      new THREE.MeshStandardMaterial({ color: '#a9d59b', roughness: 1 })
-    );
-    chao.rotation.x = -Math.PI / 2;
-    chao.position.y = -0.1;
-    chao.receiveShadow = true;
-    cityRoot.add(chao);
-
-    criarRuas();
-    criarParque(-27, -25);
-    criarParque(27, 25);
-
-    const lago = new THREE.Mesh(
-      new THREE.CircleGeometry(4.4, 32),
-      new THREE.MeshStandardMaterial({ color: '#83d4e7', roughness: 0.3 })
-    );
-    lago.rotation.x = -Math.PI / 2;
-    lago.position.set(27, 0.02, -24);
-    cityRoot.add(lago);
-
-    for (let i = 0; i < 28; i++) {
-      criarArvore(
-        -32 + (i % 7) * 10,
-        -31 + Math.floor(i / 7) * 20,
-        0.8
-      );
-    }
-
-    const iniciais = [
-      { nome: 'Biblioteca das Estrelas', tipo: 'biblioteca', x: -9, z: -9 },
-      { nome: 'Café das Nebos', tipo: 'cafe', x: 8, z: -9 },
-      { nome: 'Escola Nebular', tipo: 'escola', x: -9, z: 8 },
-      { nome: 'Laboratório Criativo', tipo: 'laboratorio', x: 8, z: 8 },
-      { nome: 'Observatório Orion', tipo: 'observatorio', x: -25, z: -9 },
-      { nome: 'Museu das Memórias', tipo: 'museu', x: 25, z: 8 },
-      { nome: 'Casinha Lilás', tipo: 'casa', x: 25, z: -9 },
-      { nome: 'Ateliê das Cores', tipo: 'cafe', x: -25, z: 8 }
-    ];
-
-    iniciais.forEach((p, i) => {
-      criarPredio({
-        ...p,
-        cor: cores[i % cores.length],
-        criador: 'Cidade Nebo'
-      }, p.x, p.z, i);
-    });
-
-    renderer.domElement.addEventListener('click', clicarPredio);
-    window.addEventListener('resize', redimensionar);
-    redimensionar();
-
-    renderer.setAnimationLoop(() => {
-      controls.update();
-      renderer.render(scene, camera);
-    });
-
-    carregarImoveisCompartilhados();
-    atualizarContador();
-  }
-
   function iniciar() {
     if (document.getElementById('cidade3d')) return;
-
     const el = document.createElement('section');
     el.id = 'cidade3d';
     el.hidden = true;
-
     el.innerHTML = `
       <div class="c3-top">
-        <div class="c3-title">
-          🌷 Cidade Nebo
-          <span id="c3count">🏘️ Cidade em crescimento</span>
-        </div>
+        <div class="c3-title">Cidade Nebo <span id="c3count">Cidade em crescimento</span></div>
         <div class="c3-actions">
-          <button id="c3home">🎯 Centralizar</button>
+          <button id="c3home">Centralizar</button>
           <button id="c3close">✕ Voltar</button>
         </div>
       </div>
       <div id="c3canvas"></div>
-      <div class="c3-help">
-        🖱️ Arraste para explorar · Rodinha para aproximar ·
-        Clique em um imóvel para conhecê-lo
-      </div>
-      <div id="c3info" hidden>
-        <strong></strong>
-        <span></span>
-        <button id="c3infoclose">✕</button>
-      </div>
+      <div class="c3-help">Arraste para explorar · Zoom para aproximar · Clique em um imóvel</div>
+      <div id="c3info" hidden><strong></strong><span></span><button id="c3infoclose">✕</button></div>
     `;
-
     document.body.appendChild(el);
 
-   document.getElementById('c3close').onclick = () => {
-  el.hidden = true;
-
-  if (renderer) renderer.setAnimationLoop(null);
-
-  document.body.classList.remove('modo-cidade');
-
-  if (typeof window.voltarModoNebo === 'function') {
-    window.voltarModoNebo();
-  }
-};
+    document.getElementById('c3close').onclick = () => {
+      el.hidden = true;
+      if (renderer) renderer.setAnimationLoop(null);
+      document.body.classList.remove('modo-cidade');
+      if (typeof window.voltarModoNebo === 'function') window.voltarModoNebo();
+    };
     document.getElementById('c3home').onclick = () => {
       if (!camera || !controls) return;
-      camera.position.set(28, 28, 34);
+      camera.position.set(36, 34, 42);
       controls.target.set(0, 0, 0);
       controls.update();
     };
-
     document.getElementById('c3infoclose').onclick = () => {
       document.getElementById('c3info').hidden = true;
     };
 
-    function carregarControles() {
-      if (window.THREE.OrbitControls) {
-        montarCidade();
-        return;
-      }
-
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
-      script.onload = montarCidade;
-      document.head.appendChild(script);
+    function controles() {
+      if (THREE.OrbitControls) { montarCidade(); return; }
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
+      s.onload = montarCidade;
+      document.head.appendChild(s);
     }
-
     if (!window.THREE) {
-      const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js';
-      script.onload = carregarControles;
-      document.head.appendChild(script);
-    } else {
-      carregarControles();
-    }
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js';
+      s.onload = controles;
+      document.head.appendChild(s);
+    } else controles();
   }
 
   function abrir() {
     iniciar();
-
     const el = document.getElementById('cidade3d');
     if (!el) return;
-
     el.hidden = false;
     document.body.classList.add('modo-cidade');
-
     if (renderer) {
       redimensionar();
       renderer.setAnimationLoop(() => {
