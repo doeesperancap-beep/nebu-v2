@@ -2828,7 +2828,42 @@ function abrirTelaSpa() {
 }
 function painelClinica()   { panel('<h3>🏥 Clínica</h3><p style="opacity:.7">Em breve! Vou me cuidar aqui. 💊</p>'); }
 function painelBiblioteca(){ panel('<h3>📚 Biblioteca</h3><p style="opacity:.7">Em breve! Vou ler livros aqui. 📖</p>'); }
-function painelJogos()     { panel('<h3>🎮 Jogos</h3><p style="opacity:.7">Em breve! Vou brincar aqui. 🎲</p>'); }
+function painelJogos() {
+  P.classList.remove('on');
+  
+  // Pega o status de conexão atual
+  const conectado = S.conectado || false;
+
+  panel(
+    '<h3>🎮 Central de Jogos</h3>' +
+    '<p style="font-size:13px;opacity:.7;margin:0 0 12px">Aqui você pode brincar e conectar com outras Nebos!</p>' +
+    
+    '<button data-g="f">🍎 Cesta de Frutas</button>' +
+    '<button data-g="b">🦋 Borboletas</button>' +
+    '<button data-g="d">🦖 Dino</button>' +
+    '<button data-x="dance">💃 Dançar</button>' +
+    '<hr style="border-color:#ffffff20;margin:12px 0">' +
+    
+    // O Botão Mágico de Amigar
+    `<button id="btnAmigar" style="background: ${conectado ? '#ffb3b3' : '#b8dfd0'}; color: #1b1824; font-weight:bold;">
+      ${conectado ? '🔌 Desconectar da Sala' : '🤝 Amigar (Conectar na Sala)'}
+    </button>` +
+    '<div id="listaAmigos" style="margin-top:12px; font-size:13px; color:#b8dfd0;"></div>'
+  );
+
+  setTimeout(() => {
+    const btn = document.getElementById('btnAmigar');
+    if (btn) {
+      btn.onclick = () => {
+        if (S.conectado) {
+          sairDaSala();
+        } else {
+          entrarNaSala();
+        }
+      };
+    }
+  }, 100);
+}
 /* ============ FUNÇÕES AUXILIARES DA DOCERIA ============ */
 
 /* Coloca conteúdo na bancada da Doceria */
@@ -4592,3 +4627,32 @@ async function checarClima() {
 // Chama a função quando o jogo abrir e depois a cada 2 horas
 setTimeout(checarClima, 10000); 
 setInterval(checarClima, 7200000); 
+
+async function entrarNaSala() {
+  const db = iniciarFirebase();
+  if (!db) return say('Sem internet... 📵');
+
+  S.conectado = true;
+  save();
+  say('Conectada! Procurando amiguinhas... 🔍');
+  
+  // Atualiza seu status no Firebase
+  await salvarNoFirebase();
+  
+  // Abre o painel de jogos de novo, agora mostrando que está conectada
+  painelJogos(); 
+}
+
+async function sairDaSala() {
+  const db = iniciarFirebase();
+  if (!db) return;
+
+  S.conectado = false;
+  save();
+  say('Desconectada. Até mais! 👋');
+  
+  // Atualiza no Firebase (para as outras sumirem com você)
+  await salvarNoFirebase();
+  
+  painelJogos();
+}
