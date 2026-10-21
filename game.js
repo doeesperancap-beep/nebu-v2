@@ -2271,21 +2271,28 @@ function modoPanel() {
 }
 
 function iniciarModo() {
+  const cidade = document.getElementById('cidade3d');
+
   if (S.modo === 'cidade') {
     document.body.classList.add('modo-cidade');
 
+    // Não mostrar telas de criação da Nébula.
     if (typeof window.abrirCidade3D === 'function') {
       window.abrirCidade3D();
-    } else {
-      abrirCidade();
     }
   } else {
     document.body.classList.remove('modo-cidade');
 
-    if (!S.nome) setTimeout(welcomePanel, 400);
-    else if (!S.pers) setTimeout(persPanel, 800);
+    if (cidade) cidade.hidden = true;
+
+    if (!S.nome) {
+      setTimeout(welcomePanel, 400);
+    } else if (!S.pers) {
+      setTimeout(persPanel, 800);
+    }
   }
 }
+
 /* ============ CIDADE ============ */
 const CIDADE_PREDIOS = {
   // Fileira de cima (prédios altos)
