@@ -420,11 +420,17 @@
 
     document.body.appendChild(el);
 
-    document.getElementById('c3close').onclick = () => {
-      el.hidden = true;
-      if (renderer) renderer.setAnimationLoop(null);
-    };
+   document.getElementById('c3close').onclick = () => {
+  el.hidden = true;
 
+  if (renderer) renderer.setAnimationLoop(null);
+
+  document.body.classList.remove('modo-cidade');
+
+  if (typeof window.voltarModoNebo === 'function') {
+    window.voltarModoNebo();
+  }
+};
     document.getElementById('c3home').onclick = () => {
       if (!camera || !controls) return;
       camera.position.set(28, 28, 34);
