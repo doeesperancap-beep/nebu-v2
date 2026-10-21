@@ -2274,25 +2274,31 @@ function iniciarModo() {
   const cidade = document.getElementById('cidade3d');
 
   if (S.modo === 'cidade') {
+    // Esconde o painel da Nébula e suas telas.
+    if (P) P.classList.remove('on');
+
     document.body.classList.add('modo-cidade');
 
-    // Não mostrar telas de criação da Nébula.
+    // Abre somente a cidade.
     if (typeof window.abrirCidade3D === 'function') {
       window.abrirCidade3D();
     }
-  } else {
-    document.body.classList.remove('modo-cidade');
 
-    if (cidade) cidade.hidden = true;
+    return;
+  }
 
-    if (!S.nome) {
-      setTimeout(welcomePanel, 400);
-    } else if (!S.pers) {
-      setTimeout(persPanel, 800);
-    }
+  // Modo Nébula: a cidade fica fechada.
+  document.body.classList.remove('modo-cidade');
+
+  if (cidade) cidade.hidden = true;
+
+  // Só o modo Nébula solicita nome e personalidade.
+  if (!S.nome) {
+    setTimeout(welcomePanel, 400);
+  } else if (!S.pers) {
+    setTimeout(persPanel, 800);
   }
 }
-
 /* ============ CIDADE ============ */
 const CIDADE_PREDIOS = {
   // Fileira de cima (prédios altos)
