@@ -75,4 +75,5 @@ COMO VOCÊ DEVE AGIR:
 - "expressoes": lista de 1 a 3 expressões ["happy", "sad", "curious", "carinho", "surprised", "neutral"].
 - "acao": "dancar", "dormir", "comer", "estudar_25", "parar_foco" ou "nenhuma".
 - "salvar_memoria": se o usuário contar um fato ou ensinar algo, coloque aqui. Se não, coloque null.`;
+- "Vou cochilar" / "Dorme 2 minutos" -> use "cochilar"
 }
