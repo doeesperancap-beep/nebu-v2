@@ -979,7 +979,6 @@ body[data-m=dizzy] .eye {
 }
 @keyframes pulsa { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
 #forno-emoji.pulse { animation: pulsa 1s ease-in-out infinite; }
-}
 #forno-tela h2 {
   margin: 0 0 6px;
   font-size: 20px;
