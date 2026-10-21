@@ -72,4 +72,5 @@ function aplicarResposta(resp) {
   if (resp.acao === 'estudar_25') iniciarCronometro(25);
   if (resp.acao === 'estudar_5') iniciarCronometro(5);
   if (resp.acao === 'parar_foco') pararCronometro();
+  if (resp.acao === 'cochilar') iniciarCochilo(2, false);
 }
