@@ -2273,9 +2273,15 @@ function modoPanel() {
 function iniciarModo() {
   if (S.modo === 'cidade') {
     document.body.classList.add('modo-cidade');
-    abrirCidade();
+
+    if (typeof window.abrirCidade3D === 'function') {
+      window.abrirCidade3D();
+    } else {
+      abrirCidade();
+    }
   } else {
     document.body.classList.remove('modo-cidade');
+
     if (!S.nome) setTimeout(welcomePanel, 400);
     else if (!S.pers) setTimeout(persPanel, 800);
   }
