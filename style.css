@@ -139,6 +139,7 @@ body[data-m=dizzy] .eye {
   left: 0; right: 0; text-align: center;
   font-size: 17px; opacity: 0; transition: opacity .4s;
   pointer-events: none;
+  padding: 0 16px; box-sizing: border-box;
 }
 #bubble.on { opacity: .85; }
 
@@ -147,6 +148,7 @@ body[data-m=dizzy] .eye {
   bottom: calc(env(safe-area-inset-bottom, 0px) + 14px);
   left: 0; right: 0;
   display: flex; justify-content: center; gap: 8px;
+   flex-wrap: wrap; padding: 0 8px; box-sizing: border-box;
 }
 #bar button {
   background: #ffffff14; color: #fff; border: 0;
@@ -975,8 +977,8 @@ body[data-m=dizzy] .eye {
   margin-bottom: 12px;
   display: inline-block;
 }
-#forno-emoji.pulse {
-  animation: pulse-aviso 1s ease-in-out infinite;
+@keyframes pulsa { 0%,100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+#forno-emoji.pulse { animation: pulsa 1s ease-in-out infinite; }
 }
 #forno-tela h2 {
   margin: 0 0 6px;
