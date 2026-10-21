@@ -1983,3 +1983,321 @@ body.modo-cidade #bar,
 body.modo-cidade #doceria {
   display: none !important;
 }
+
+
+/* =====================================================
+   NÉBULA V2 — ROSTINHO FOFO 💜
+   Adaptação inspirada nos desenhos originais
+   Cole no FINAL do style.css
+   ===================================================== */
+
+:root {
+  --eye: #c4adff;
+  --nebo-purple: #b9a0ff;
+  --nebo-light: #e6dcff;
+  --nebo-pink: #ff9fc9;
+}
+
+/* Olhos principais */
+.eye {
+  background-color: var(--nebo-purple) !important;
+  background-image:
+    radial-gradient(
+      ellipse at 30% 22%,
+      #ffffff 0%,
+      #ffffff 5%,
+      transparent 13%
+    ),
+    linear-gradient(
+      145deg,
+      #ddcaff 0%,
+      #b69aff 48%,
+      #9274e8 100%
+    ) !important;
+
+  border-radius: 44% 44% 42% 42% !important;
+  box-shadow:
+    inset 0 -5px 9px #7656bd55,
+    0 0 12px #a98aff20;
+
+  overflow: hidden;
+  transition:
+    height .22s ease,
+    width .22s ease,
+    border-radius .22s ease,
+    background-color .22s ease,
+    box-shadow .22s ease;
+}
+
+/* Retira as máscaras antigas */
+.eye::before,
+.eye::after {
+  content: none !important;
+}
+
+/* EXPRESSÃO: NEUTRA */
+body[data-m="neutral"] .eye {
+  border-radius: 44% 44% 42% 42% !important;
+  filter: none;
+}
+
+/* EXPRESSÃO: FELIZ
+   Olhos viram duas curvas sorridentes */
+body[data-m="happy"] .eye,
+body[data-m="carinho"] .eye {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  border: 0 !important;
+  height: calc(var(--ew) * .65);
+  overflow: visible;
+  position: relative;
+}
+
+body[data-m="happy"] .eye::after,
+body[data-m="carinho"] .eye::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute;
+  left: 7%;
+  top: 5%;
+  width: 86%;
+  height: 55%;
+  border: 0;
+  border-bottom: clamp(4px, 1.1vw, 8px) solid var(--nebo-purple);
+  border-radius: 0 0 55% 55%;
+  background: transparent;
+  box-shadow: 0 3px 5px #a98aff16;
+}
+
+/* Carinho: pequenos corações */
+body[data-m="carinho"] .eye::after {
+  content: "♥" !important;
+  top: -10%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--nebo-pink);
+  font-size: calc(var(--ew) * .75);
+  line-height: 1;
+  text-align: center;
+  animation: nebo-coracao .7s ease-in-out infinite alternate;
+}
+
+/* EXPRESSÃO: SONO
+   Olhos quase fechadinhos */
+body[data-m="sleepy"] .eye,
+body[data-m="bored"] .eye {
+  height: calc(var(--ew) * .43);
+  border-radius: 0 0 50% 50% !important;
+  background: linear-gradient(
+    to bottom,
+    #c9b5ff,
+    #9d82eb
+  ) !important;
+  box-shadow: none;
+}
+
+body[data-m="sleepy"] .eye::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute;
+  inset: -55% -5% auto;
+  height: 70%;
+  background: #000;
+  border-radius: 0 0 50% 50%;
+}
+
+/* EXPRESSÃO: CURIOSIDADE */
+body[data-m="curious"] .eye {
+  border-radius: 46% 46% 42% 42% !important;
+  background-image:
+    radial-gradient(circle at 28% 20%,
+      #fff 0 5%, transparent 13%),
+    linear-gradient(145deg, #e0d1ff, #a58aff) !important;
+  box-shadow: 0 0 20px #a98aff35;
+}
+
+/* EXPRESSÃO: SURPRESA */
+body[data-m="surprised"] .eye,
+body[data-m="scared"] .eye {
+  border-radius: 50% !important;
+  background: radial-gradient(
+    circle at 32% 25%,
+    #fff 0 5%,
+    #e1d6ff 18%,
+    #ad93ff 70%,
+    #8d70df 100%
+  ) !important;
+  box-shadow: 0 0 18px #b9a0ff40;
+}
+
+body[data-m="surprised"] .eye {
+  transform: scale(1.08);
+}
+
+/* EXPRESSÃO: TRISTE */
+body[data-m="sad"] .eye {
+  border-radius: 48% 48% 40% 40% !important;
+  background: linear-gradient(
+    145deg,
+    #c9d4ff,
+    #a3b5f5
+  ) !important;
+}
+
+body[data-m="sad"] .eye::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute;
+  top: -8%;
+  left: -12%;
+  width: 125%;
+  height: 40%;
+  background: #000;
+  border-radius: 0 0 50% 50%;
+}
+
+/* EXPRESSÃO: CHORANDO */
+body[data-m="cry"] .eye {
+  background: linear-gradient(
+    145deg,
+    #d8e5ff,
+    #a6b9ff
+  ) !important;
+  border-radius: 48% 48% 42% 42% !important;
+}
+
+body[data-m="cry"] .eye::after {
+  content: "💧" !important;
+  display: block !important;
+  position: absolute;
+  top: 65%;
+  left: 55%;
+  width: 35%;
+  height: 35%;
+  background: transparent;
+  font-size: calc(var(--ew) * .22);
+}
+
+/* EXPRESSÃO: RAIVA */
+body[data-m="angry"] .eye {
+  background: linear-gradient(
+    145deg,
+    #ffb7c7,
+    #e981ab
+  ) !important;
+  border-radius: 42% 42% 48% 48% !important;
+}
+
+body[data-m="angry"] .eye::after {
+  content: "" !important;
+  display: block !important;
+  position: absolute;
+  top: -2%;
+  left: -12%;
+  width: 125%;
+  height: 42%;
+  background: #000;
+  border-radius: 0 0 45% 45%;
+}
+
+/* EXPRESSÃO: DOENTE */
+body[data-m="sick"] .eye {
+  background: linear-gradient(
+    145deg,
+    #d9f3d6,
+    #a4d4a8
+  ) !important;
+  border-radius: 45% !important;
+}
+
+/* EXPRESSÃO: TONTURA
+   Espirais desenhadas dentro dos olhos */
+body[data-m="dizzy"] .eye {
+  background: transparent !important;
+  background-image: none !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+  overflow: visible;
+  animation: nebo-espiral 3s linear infinite;
+}
+
+body[data-m="dizzy"] .eye::after {
+  content: "＠" !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: var(--nebo-purple);
+  font-size: calc(var(--ew) * 1.05);
+  background: transparent;
+}
+
+/* Bochechinhas */
+.bl {
+  background: var(--nebo-pink) !important;
+  filter: blur(1px);
+  box-shadow: 0 0 12px #ff9fc933;
+}
+
+body[data-m="happy"] .bl,
+body[data-m="carinho"] .bl {
+  opacity: .7;
+}
+
+/* Boca: mais suave e arredondada */
+body[data-m="happy"] #mouth::before,
+body[data-m="carinho"] #mouth::before {
+  border-bottom-color: var(--nebo-purple);
+  border-width: 4px;
+}
+
+body[data-m="sad"] #mouth::before {
+  border-top-color: #b5c5ff;
+  border-width: 4px;
+}
+
+body[data-m="curious"] #mouth::before,
+body[data-m="surprised"] #mouth::before {
+  border-color: var(--nebo-light);
+  border-width: 4px;
+}
+
+/* Animações delicadas */
+@keyframes nebo-coracao {
+  from { transform: scale(.92); }
+  to   { transform: scale(1.08); }
+}
+
+@keyframes nebo-espiral {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* Respeita telas pequenas */
+@media (max-width: 480px) {
+  :root {
+    --ew: min(24vw, 30vh);
+  }
+
+  #face {
+    gap: calc(var(--ew) * .25);
+  }
+}
+
+/* Respeita preferência por menos animações */
+@media (prefers-reduced-motion: reduce) {
+  body[data-m="carinho"] .eye::after,
+  body[data-m="dizzy"] .eye {
+    animation-duration: 3s;
+    animation-iteration-count: 1;
+  }
+}
