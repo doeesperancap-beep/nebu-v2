@@ -6,60 +6,55 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "145504626308",
   appId: "1:145504626308:web:ac124c13d59ef3f7be44d1"
 };
-
 let dbFirebase = null;
-let salaRef = null;
+const SALA_TIMEOUT_MS = 90000;   // a Nébula some da sala se ficar 90s sem dar sinal
 
 function iniciarFirebase() {
   if (dbFirebase) return dbFirebase;
-  if (typeof firebase === 'undefined') return null;   // ← ADICIONA ESSA LINHA
+  if (typeof firebase === 'undefined') return null;
   try {
     if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
     dbFirebase = firebase.firestore();
-    salaRef = dbFirebase.collection('sala').doc('principal');
-    console.log('🔥 Firebase conectado!');
     return dbFirebase;
   } catch (e) {
     console.error('❌ Erro Firebase:', e);
     return null;
   }
 }
+
 // ==================== SALVAR ====================
 async function salvarNoFirebase() {
   const db = iniciarFirebase();
   if (!db || !S.id) return;
-
   try {
     await db.collection('nebulas').doc(S.id).set({
       id: S.id,
-      nome: S.nome || 'Nebo',
-      humor: S.humor,
-      fome: S.fome,
-      energia: S.energia,
-      saude: S.saude,
+      nome: String(S.nome || 'Nebo').slice(0, 12),
+      humor: Math.round(S.humor),
+      fome: Math.round(S.fome),
+      energia: Math.round(S.energia),
+      saude: Math.round(S.saude),
       moedas: S.moedas || 0,
-      pers: S.pers,
-      conectado: S.conectado || false,
+      pers: S.pers || null,
+      conectado: !!S.conectado,
       atualizadoEm: Date.now()
     });
-    console.log('💾 Salvo no Firebase');
   } catch (e) {
     console.error('Erro ao salvar:', e);
   }
 }
 
-// ==================== LER ====================
+// ==================== LER (só quem está conectada e ativa) ====================
 async function lerNebulas() {
   const db = iniciarFirebase();
   if (!db) return [];
-
   try {
-    const snapshot = await db.collection('nebulas').get();
+    const corte = Date.now() - SALA_TIMEOUT_MS;
+    const snapshot = await db.collection('nebulas').where('atualizadoEm', '>', corte).get();
     const lista = [];
     snapshot.forEach(doc => {
-      const dados = doc.data();
-      // Não mostra a si mesma
-      if (dados.id !== S.id) lista.push(dados);
+      const d = doc.data();
+      if (d.id !== S.id && d.conectado) lista.push(d);
     });
     return lista;
   } catch (e) {
@@ -74,54 +69,50 @@ async function sairDoFirebase() {
   if (!db || !S.id) return;
   try {
     await db.collection('nebulas').doc(S.id).delete();
-    console.log('🗑️ Removida da sala');
   } catch (e) {
     console.error('Erro ao sair:', e);
   }
 }
 
-// Salva automaticamente a cada 30 segundos
+// Batimento: só enquanto estiver conectada na sala
 setInterval(() => {
-  if (S.id && S.modo === 'nebo') salvarNoFirebase();
+  if (S.id && S.modo === 'nebo' && S.conectado) salvarNoFirebase();
 }, 30000);
 
 /* ============ RECORDE GLOBAL DO DINO ============ */
-
-/* Lê o recorde do Firebase */
 async function lerRecordeDino() {
   const db = iniciarFirebase();
   if (!db) return null;
   try {
     const doc = await db.collection('recordes').doc('dino').get();
-    if (!doc.exists) return null;
-    return doc.data();
+    return doc.exists ? doc.data() : null;
   } catch (e) {
     console.error('Erro ao ler recorde:', e);
     return null;
   }
 }
 
-/* Salva o recorde no Firebase (só se for maior) */
+/* Salva só se for maior (transação: sem corrida entre dois jogadores) */
 async function salvarRecordeDino(pontos, nomeNebo, idNebo) {
   const db = iniciarFirebase();
-  if (!db) return;
+  if (!db) return false;
   try {
-    // Lê o atual
-    const doc = await db.collection('recordes').doc('dino').get();
-    const atual = doc.exists ? doc.data() : null;
-
-    // Só sobrescreve se for MAIOR
-    if (atual && atual.pontos >= pontos) return;
-
-    await db.collection('recordes').doc('dino').set({
-      pontos: pontos,
-      nome: nomeNebo || 'Nebo',
-      id: idNebo || 'sem-id',
-      atualizadoEm: Date.now()
+    const ref = db.collection('recordes').doc('dino');
+    return await db.runTransaction(async tx => {
+      const doc = await tx.get(ref);
+      const atual = doc.exists ? (doc.data().pontos || 0) : 0;
+      if (atual >= pontos) return false;
+      tx.set(ref, {
+        pontos,
+        nome: String(nomeNebo || 'Nebo').slice(0, 12),
+        id: idNebo || 'sem-id',
+        atualizadoEm: Date.now()
+      });
+      return true;
     });
-    console.log('🏆 Recorde salvo:', pontos, 'por', nomeNebo);
   } catch (e) {
     console.error('Erro ao salvar recorde:', e);
+    return false;
   }
 }
 /* ============ CATÁLOGO DE SABONETES ============ */
@@ -163,6 +154,8 @@ const clamp = (v, a = 0, b = 100) => Math.max(a, Math.min(b, v));
 const rnd = arr => arr[Math.floor(Math.random() * arr.length)];
 const vib = p => { try { navigator.vibrate?.(p); } catch {} };
 const P = $('panel');  
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+  ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 /* ============ 1.5 SISTEMA DE SOM ============ */
 const SOM = (() => {
   let ctx = null;
@@ -701,7 +694,7 @@ addEventListener('pointerdown', e => {
   act();
   if (gOn) return;
   if (!permAsked) { permAsked = 1; askPerm().then(startSensors); }
-  if (e.target.closest('button,#estado,#panel,#bar')) return;
+    if (e.target.closest('button,#estado,#panel,#bar,#doceria,#biblioteca,#cidade,#telaSpa,#tela-foco,#bib-loja-painel,#bib-escolha,#bib-menu')) return;
   
   ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
   if (ptrs.size === 1) {
@@ -1098,88 +1091,75 @@ function prefs() {
     S.dis = rnd(FOODS.filter(x => !S.pref || x !== S.pref.f));
 }
 
+/* Descobre os dados de uma comida (do mercado ou feita em casa) */
+function infoComida(f) {
+  const ehCaseiro = f.startsWith('caseiro_');
+  const chave = ehCaseiro ? f.replace('caseiro_', '') : f;
+
+  if (ehCaseiro) {
+    const rec = Object.values(RECEITAS).find(r => r.emoji === chave);
+    if (rec) return { chave, ehCaseiro, nome: rec.nome, humor: rec.humor, saude: 0 };
+  }
+  if (CATALOGO[chave]) return { chave, ehCaseiro, ...CATALOGO[chave] };
+  return null;
+}
+
 function eat(f) {
-  // Verifica se tem no estoque
   if ((S.estoque[f] || 0) <= 0) {
     say('Não tenho ' + f + ' no estoque... 😢');
     return;
   }
 
-  // Detecta se é doce caseiro
-  const ehCaseiro = f.startsWith('caseiro_');
-  const chaveReal = ehCaseiro ? f.replace('caseiro_', '') : f;
+  const c = infoComida(f);
+  if (!c) { say('Não sei o que é isso... 🤔'); return; }
+  const emoji = c.chave;
 
-  // Pega do catálogo
-  const c = CATALOGO[chaveReal];
-  if (!c) {
-    say('Não sei o que é isso... 🤔');
-    return;
-  }
-  // Reduz do estoque
   S.estoque[f] -= 1;
-if (S.estoque[f] <= 0) delete S.estoque[f];
-  
-  // Fecha o painel
+  if (S.estoque[f] <= 0) delete S.estoque[f];
   P.classList.remove('on');
 
-   // Aplica efeitos
   S.fome = clamp(S.fome + 15);
-  
-  // Verifica se é favorita / detestada
+
+  const fav = (S.favoritas || []).includes(emoji);
+  const det = (S.detestadas || []).includes(emoji);
+
   let humorGanho = c.humor;
-  let extraFala = '';
-  let extraExpressao = '';
-  
-  if ((S.favoritas || []).includes(f)) {
-    humorGanho = c.humor * 2;   // dobro
-    extraFala = ' (meu favorito!)';
-    extraExpressao = 'carinho';
-  } else if ((S.detestadas || []).includes(f)) {
-    humorGanho = Math.min(-3, c.humor * -1);   // sempre negativo
-    extraFala = ' (eca!)';
-    extraExpressao = 'sad';
+  let expressao = 'happy';
+  let fala;
+  let sufixo = '';
+
+  if (fav) {
+    humorGanho = c.humor * 2;
+    expressao = 'carinho';
+    sufixo = ' (meu favorito!)';
+  } else if (det) {
+    humorGanho = Math.min(-3, -c.humor);
+    expressao = 'sad';
+    sufixo = ' (eca!)';
   }
-  
+
   S.humor = clamp(S.humor + humorGanho);
   S.saude = clamp(S.saude + c.saude);
-  // Fala + expressão
-    let fala = 'Nham! ' + f;
-  let expressao = extraExpressao || 'happy';
-  let msgExtra = extraFala;
-  if (c.humor >= 7) {
-    fala = 'Adoro! ' + f;
-    expressao = 'carinho';
-  } else if (c.humor >= 5) {
-    fala = 'Que delícia! ' + f;
-  } else if (c.saude >= 3) {
-    fala = 'Saudável! ' + f + ' 🥗';
-  } else if (c.saude < 0) {
-    fala = 'Hmm... ' + f;
-  }
 
-  if (c.saude <= -2) {
-    msgExtra = ' (muito bom )';
-  } else if (c.saude >= 2) {
-    msgExtra = ' ✨';
-  }
+  if (det) fala = 'Eca... ' + emoji;
+  else if (c.humor >= 7) { fala = 'Adoro! ' + emoji; expressao = 'carinho'; }
+  else if (c.humor >= 5) fala = 'Que delícia! ' + emoji;
+  else if (c.saude >= 3) fala = 'Saudável! ' + emoji + ' 🥗';
+  else fala = 'Nham! ' + emoji;
 
-  set(expressao, 2500, fala + msgExtra);
+  if (!fav && !det && c.saude >= 2) sufixo = ' ✨';
 
+  set(expressao, 2500, fala + sufixo);
   SOM.melodia([N.MI, N.SOL], 0.1, 'triangle', 0.1);
 
-    if (c.humor >= 6) {
-    setTimeout(() => heart(innerWidth / 2, innerHeight / 2), 300);
-  }
+  if (c.humor >= 6 && !det) setTimeout(() => heart(innerWidth / 2, innerHeight / 2), 300);
 
-   // 🎁 Bônus se for doce caseiro
-  if (ehCaseiro) {
+  // 🎁 Bônus de doce caseiro
+  if (c.ehCaseiro) {
     let bonus = 30;
-    if ((S.favoritas || []).includes(chaveReal)) bonus += 15;   // favorita = +15 extra
-
+    if (fav) bonus += 15;
     ganharMoedas(bonus);
-    setTimeout(() => {
-      say(`Que delícia! +${bonus} 🪙 de carinho 💗`, 3500);
-    }, 800);
+    setTimeout(() => say(`Que delícia! +${bonus} 🪙 de carinho 💗`, 3500), 800);
   }
   save();
 }
@@ -2003,20 +1983,21 @@ function startDino() {
         if (pontos > 0) ganharMoedas(pontos);
         save();
 
-        // 🌐 Tenta salvar no Firebase (só se for maior que o global)
-        if (pontos > recordePontos) {
-          salvarRecordeDino(pontos, S.nome || 'Nebo', S.id || 'sem-id');
-        }
+                // 🌐 Recorde global (só grava se for maior que o global)
+        const bateuGlobal = pontos > recordePontos;
+        if (bateuGlobal) salvarRecordeDino(pontos, S.nome || 'Nebo', S.id || 'sem-id');
 
-        if (novoRecordeLocal || pontos > recordePontos) {
+        if (bateuGlobal) {
           SOM.melodia([N.DO, N.MI, N.SOL, N.DO2], 0.12, 'sine', 0.14);
           say('🏆 NOVO RECORDE GLOBAL! ' + pontos + ' bolos!');
+        } else if (novoRecordeLocal) {
+          SOM.melodia([N.DO, N.MI, N.SOL], 0.12, 'sine', 0.12);
+          say('🏅 Seu novo recorde: ' + pontos + ' bolos!');
         } else {
           SOM.melodia([N.DO_BAIXO, N.DO_BAIXO], 0.2, 'sawtooth', 0.1);
           say('Ai! Bati no bolo 😢');
         }
         return false;
-      }
 
       // Passou? Conta
       if (k.x < nebo.x - 40 && !k._contado) {
@@ -2582,7 +2563,9 @@ function renderMercado() {
     html += `<button id="btnPagar" style="font-size:16px;padding:14px;background:#f7d9e4;color:#1b1824">✓ Pagar ${total}🪙</button>`;
   }
 
+   const scrollAnt = P.scrollTop;
   panel(html);
+  P.scrollTop = scrollAnt;
 
   // Handlers
   setTimeout(() => {
@@ -3816,6 +3799,7 @@ function abrirLojaLivros() {
 function renderizarLojaLivros() {
   const painel = document.getElementById('bib-loja-painel');
   if (!painel) return;
+  const scrollAnt = document.getElementById('bib-loja-lista')?.scrollTop || 0;
 
   const comprados = S.livrosComprados || [];
   const total = Object.keys(LIVROS).length;
@@ -3888,65 +3872,58 @@ function renderizarLojaLivros() {
   `;
 
   painel.innerHTML = html;
+    const listaEl = document.getElementById('bib-loja-lista');
+  if (listaEl) listaEl.scrollTop = scrollAnt;
 
-  // Handlers
-  setTimeout(() => {
-    // Adicionar ao carrinho
-    painel.querySelectorAll('.bib-loja-item').forEach(el => {
-      el.onclick = () => {
-        const id = el.dataset.id;
-        const comprados = S.livrosComprados || [];
-        if (comprados.includes(id)) return; // Já tem, não faz nada
-        
-        carrinhoLivros[id] = (carrinhoLivros[id] || 0) + 1;
-        SOM.nota(700 + Math.random() * 200, 0.05, 'sine', 0.08);
-        renderizarLojaLivros(); // Atualiza a tela
-      };
-    });
+  // Handlers (sem setTimeout: o HTML já está no DOM)
+  painel.querySelectorAll('.bib-loja-item').forEach(el => {
+    el.onclick = () => {
+      const id = el.dataset.id;
+      if ((S.livrosComprados || []).includes(id)) return;
+      // clicar de novo tira do carrinho (livro só existe 1x)
+      if (carrinhoLivros[id]) delete carrinhoLivros[id];
+      else carrinhoLivros[id] = 1;
+      SOM.nota(700 + Math.random() * 200, 0.05, 'sine', 0.08);
+      renderizarLojaLivros();
+    };
+  });
 
-    // Pagar
-    const btnPagar = document.getElementById('bib-btn-pagar');
-    if (btnPagar) {
-      btnPagar.onclick = () => {
-        const comprados = S.livrosComprados || [];
-        
-        Object.entries(carrinhoLivros).forEach(([id, q]) => {
-          const L = LIVROS[id];
-          if (!L) return;
-          
-          // Verifica se tem moedas
-          if ((S.moedas || 0) < L.preco * q) {
-            toastCompra('Moedas insuficientes para alguns itens! 😢');
-            return;
-          }
+  const btnPagar = document.getElementById('bib-btn-pagar');
+  if (btnPagar) {
+    btnPagar.onclick = () => {
+      const comprados = S.livrosComprados || [];
+      const ids = Object.keys(carrinhoLivros).filter(id => LIVROS[id] && !comprados.includes(id));
+      if (!ids.length) return;
 
-          // Compra
-          S.moedas -= L.preco * q;
-          if (!comprados.includes(id)) comprados.push(id); // Como é livro, só precisa de 1 na estante
-        });
+      const total = ids.reduce((soma, id) => soma + LIVROS[id].preco, 0);
+      if ((S.moedas || 0) < total) {
+        SOM.melodia([N.DO_BAIXO, N.DO_BAIXO], 0.1, 'sawtooth', 0.12);
+        toastCompra('Moedas insuficientes! 😢');
+        return;
+      }
 
-        S.livrosComprados = comprados;
-        save();
-        
-        SOM.melodia([N.DO, N.MI, N.SOL, N.DO2], 0.08, 'sine', 0.12);
-        toastCompra('📚 Livros comprados!');
-        
-        carrinhoLivros = {}; // Limpa a cesta
-        renderizarLojaLivros(); // Atualiza a tela
-        desenharEstante(document.getElementById('biblioteca'));
-      };
-    }
+      S.moedas -= total;
+      ids.forEach(id => comprados.push(id));
+      S.livrosComprados = comprados;
+      save();
 
-    // Fechar
-    const btnFechar = document.getElementById('bib-loja-fechar');
-    if (btnFechar) btnFechar.onclick = () => {
-      carrinhoLivros = {}; // Limpa a cesta ao fechar
-      painel.remove();
+      SOM.melodia([N.DO, N.MI, N.SOL, N.DO2], 0.08, 'sine', 0.12);
+      toastCompra('📚 Livros comprados!');
+      carrinhoLivros = {};
+      renderizarLojaLivros();
       const bib = document.getElementById('biblioteca');
       if (bib) desenharEstante(bib);
     };
-  }, 50);
-}
+  }
+
+  const btnFechar = document.getElementById('bib-loja-fechar');
+  if (btnFechar) btnFechar.onclick = () => {
+    carrinhoLivros = {};
+    painel.remove();
+    const bib = document.getElementById('biblioteca');
+    if (bib) desenharEstante(bib);
+  };
+  
 /* ---------- COMPRAR LIVRO ---------- */
 function comprarLivro(id) {
   const L = LIVROS[id];
@@ -4089,10 +4066,11 @@ P.onclick = e => {
 
   // Conectar / Desconectar
   else if (d.x === 'conectar') { P.classList.remove('on'); painelConectar(); }
-  else if (d.x === 'desconectar') {
+   else if (d.x === 'desconectar') {
     S.conectado = false;
     S.cidadeId = null;
     save();
+    sairDoFirebase();
     say('Desconectei...');
     P.classList.remove('on');
   }
@@ -4310,7 +4288,7 @@ function welcomePanel() {
       S.id = gerarID(nome);
       save();
       P.innerHTML = `
-        <h3>Prazer, ${nome}! 💗</h3>
+        <h3>Prazer, ${esc(nome)}! 💗</h3>
         <p style="opacity:.7;font-size:14px">
           Seu ID: <code>${S.id}</code>
         </p>
@@ -4360,7 +4338,7 @@ function drawEstado() {
     ['🧼', 'Limpeza', S.limpeza]
   ];
   const nomeHtml = S.nome
-    ? `<div class="st" style="font-size:14px"><b>${S.nome}</b> <span style="opacity:.5;font-size:12px">${S.id || ''}</span></div>`
+    ? `<div class="st" style="font-size:14px"><b>${esc(S.nome)}</b>> <span style="opacity:.5;font-size:12px">${S.id || ''}</span></div>`
     : '';
   const moedasHtml =
     `<div class="st" style="font-size:14px">🪙 <b>${S.moedas || 0}</b> moedas</div>`;
@@ -4401,7 +4379,7 @@ function xarope() {
   P.classList.remove('on');
   say('Xarope tomado! Já me sinto melhor 🍯');
   set('happy', 2500);
-  if (bXarope) bXarope.style.display = 'none';
+      if (gOn || S.modo === 'cidade') return;   // não interrompe jogos nem o modo Cidade
   save();
 }
 /* ============ TICK DA COMIDA ============ */
@@ -4519,15 +4497,14 @@ $('bVoz').onclick = () => {
    MODO FOCO / CRONÔMETRO
    ============================================================ */
 let timerFoco = null;
-let segundosRestantes = 0;
+let fimFoco = 0;
 
 function iniciarCronometro(minutos) {
-  if (timerFoco) clearInterval(timerFoco); // Limpa timer anterior
-  
-  segundosRestantes = minutos * 60;
+  if (timerFoco) clearInterval(timerFoco);
+
+  fimFoco = Date.now() + minutos * 60000;   // baseado no relógio: não atrasa em segundo plano
   P.classList.remove('on');
-  
-  // Cria a tela de foco
+
   let telaFoco = document.getElementById('tela-foco');
   if (!telaFoco) {
     telaFoco = document.createElement('div');
@@ -4541,41 +4518,39 @@ function iniciarCronometro(minutos) {
     document.body.appendChild(telaFoco);
   }
 
-  const atualizarVisor = () => {
-    const m = Math.floor(segundosRestantes / 60);
-    const s = segundosRestantes % 60;
-    telaFoco.innerHTML = `
-      <h1 style="font-size: 24px; color: #f7d9e4; margin-bottom: 10px;">Modo Foco ⏱️</h1>
-      <div style="font-size: 70px; font-weight: bold; font-variant-numeric: tabular-nums;">
-        ${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}
-      </div>
-      <p style="opacity: 0.6; margin-top: 20px;">A Nebo está estudando com você...</p>
-      <button id="btnPararFoco" style="margin-top: 30px; padding: 12px 24px; border-radius: 20px; border: 0; background: #ffb3b3; color: #1b1824; font-weight: bold;">Cancelar Foco</button>
-    `;
-    
-    document.getElementById('btnPararFoco').onclick = pararCronometro;
+  // Monta UMA vez; depois só o texto do tempo muda
+  telaFoco.innerHTML = `
+    <h1 style="font-size:24px;color:#f7d9e4;margin-bottom:10px">Modo Foco ⏱️</h1>
+    <div id="foco-tempo" style="font-size:70px;font-weight:bold;font-variant-numeric:tabular-nums">00:00</div>
+    <p style="opacity:.6;margin-top:20px">A Nebo está estudando com você...</p>
+    <button id="btnPararFoco" style="margin-top:30px;padding:12px 24px;border-radius:20px;border:0;background:#ffb3b3;color:#1b1824;font-weight:bold">Cancelar Foco</button>
+  `;
+  document.getElementById('btnPararFoco').onclick = pararCronometro;
+  const tempoEl = document.getElementById('foco-tempo');
+
+  const atualizar = () => {
+    const r = Math.max(0, Math.ceil((fimFoco - Date.now()) / 1000));
+    tempoEl.textContent = String(Math.floor(r / 60)).padStart(2, '0') + ':' + String(r % 60).padStart(2, '0');
+    return r;
   };
 
-  atualizarVisor();
-  set('curious', minutos * 60000, 'Vou ficar quietinha te ajudando...'); // Fica de olho
+  atualizar();
+  set('curious', minutos * 60000, 'Vou ficar quietinha te ajudando...');
 
   timerFoco = setInterval(() => {
-    segundosRestantes--;
-    if (segundosRestantes <= 0) {
-      clearInterval(timerFoco);
-      timerFoco = null;
-      if (document.getElementById('tela-foco')) document.getElementById('tela-foco').remove();
-      
-      // Fim do foco!
-      S.humor = clamp(S.humor + 15);
-      S.energia = clamp(S.energia + 10);
-      ganharMoedas(20); // Recompensa por estudar!
-      save();
-      SOM.melodia([N.DO, N.MI, N.SOL, N.DO2], 0.15, 'sine', 0.15);
-      set('happy', 5000, 'Você conseguiu! Estudamos juntos! 💗 +20 moedas');
-    } else {
-      atualizarVisor();
-    }
+    if (atualizar() > 0) return;
+
+    clearInterval(timerFoco);
+    timerFoco = null;
+    telaFoco.remove();
+
+    S.humor = clamp(S.humor + 15);
+    S.energia = clamp(S.energia + 10);
+    ganharMoedas(20);
+    save();
+    SOM.melodia([N.DO, N.MI, N.SOL, N.DO2], 0.15, 'sine', 0.15);
+    until = 0;
+    set('happy', 5000, 'Você conseguiu! Estudamos juntos! 💗 +20 moedas');
   }, 1000);
 }
 
@@ -4644,15 +4619,9 @@ async function entrarNaSala() {
 }
 
 async function sairDaSala() {
-  const db = iniciarFirebase();
-  if (!db) return;
-
   S.conectado = false;
   save();
   say('Desconectada. Até mais! 👋');
-  
-  // Atualiza no Firebase (para as outras sumirem com você)
-  await salvarNoFirebase();
-  
+  await sairDoFirebase();   // remove da sala em vez de só marcar como desconectada
   painelJogos();
 }
