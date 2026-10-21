@@ -2468,7 +2468,7 @@ setTimeout(mundo, 400);
 /* ============ PAINÉIS DOS LUGARES (placeholders) ============ */
 /* ============ MERCADO ============ */
 let carrinho = {};   // { '🍎': 2, '🍕': 1 }
-
+let carrinhoLivros = {}; // { 'divinos_rivais': 2, 'hp_pedra': 1 }
 /* ============ MÚSICA DO MERCADO ============ */
 let musicaMercado = null;
 
@@ -3779,45 +3779,52 @@ function renderizarLojaLivros() {
       <div id="bib-loja-lista">
   `;
 
-  // Ordena alfabeticamente por nome
-  const ordenados = Object.entries(LIVROS).sort((a, b) =>
-    a[1].nome.localeCompare(b[1].nome, 'pt-BR')
-  );
+  const ordenados = Object.entries(LIVROS).sort((a, b) => a[1].nome.localeCompare(b[1].nome, 'pt-BR'));
 
   ordenados.forEach(([id, L]) => {
     const jaTem = comprados.includes(id);
+    const noCarrinho = carrinhoLivros[id] || 0;
     const podeComprar = (S.moedas || 0) >= L.preco;
-    const classes = [
-      'bib-loja-item',
-      jaTem ? 'comprado' : '',
-      (!jaTem && !podeComprar) ? 'sem-moedas' : ''
-    ].filter(Boolean).join(' ');
-
-    // Gradiente da capa
-    const cor1 = L.cor;
-    const cor2 = ajustarCor(L.cor, -25);
+    
+    let classes = ['bib-loja-item'];
+    if (jaTem) classes.push('comprado');
+    else if (!podeComprar) classes.push('sem-moedas');
+    if (noCarrinho > 0) classes.push('no-carrinho'); // Nova classe visual
 
     html += `
-      <div class="${classes}" data-id="${id}">
-        <div class="bib-loja-capa"
-             style="background:linear-gradient(135deg, ${cor1} 0%, ${cor2} 60%, ${cor1} 100%);
-                    --bib-cor2:${L.cor2 || '#d4af37'};">
-        </div>
+      <div class="${classes.join(' ')}" data-id="${id}">
+        <div class="bib-loja-capa" style="background:linear-gradient(135deg, ${L.cor} 0%, ${ajustarCor(L.cor, -25)} 60%, ${L.cor} 100%); --bib-cor2:${L.cor2 || '#d4af37'};"></div>
         <div class="bib-loja-info">
           <div class="bib-loja-nome">${L.nome}</div>
           <div class="bib-loja-autor">${L.autor}</div>
-          ${jaTem
-            ? `<div class="bib-loja-preco comprado">✓ COMPRADO</div>`
-            : `<div class="bib-loja-preco">🪙 ${L.preco}</div>`
+          ${jaTem 
+            ? `<div class="bib-loja-preco comprado">✓ COMPRADO</div>` 
+            : `<div class="bib-loja-preco">🪙 ${L.preco} ${noCarrinho > 0 ? `<span style="color:#f7d9e4">(x${noCarrinho})</span>` : ''}</div>`
           }
         </div>
       </div>
     `;
   });
 
-  html += `
-      </div>
+  // Calcula o total do carrinho
+  let totalCarrinho = 0;
+  Object.entries(carrinhoLivros).forEach(([id, q]) => {
+    if (LIVROS[id]) totalCarrinho += LIVROS[id].preco * q;
+  });
 
+  html += `</div>`;
+
+  // Área do carrinho (só aparece se tiver algo)
+  if (totalCarrinho > 0) {
+    html += `
+      <div id="bib-loja-carrinho">
+        <div>🛒 Carrinho: 🪙 ${totalCarrinho}</div>
+        <button id="bib-btn-pagar" class="bib-btn-pagar">Pagar</button>
+      </div>
+    `;
+  }
+
+  html += `
       <div id="bib-loja-rodape">
         <div id="bib-loja-progresso">
           📚 ${comprados.length} / ${total} livros na coleção
@@ -3832,34 +3839,62 @@ function renderizarLojaLivros() {
 
   // Handlers
   setTimeout(() => {
-    // Clicar em cada livro
+    // Adicionar ao carrinho
     painel.querySelectorAll('.bib-loja-item').forEach(el => {
       el.onclick = () => {
         const id = el.dataset.id;
-        comprarLivro(id);
+        const comprados = S.livrosComprados || [];
+        if (comprados.includes(id)) return; // Já tem, não faz nada
+        
+        carrinhoLivros[id] = (carrinhoLivros[id] || 0) + 1;
+        SOM.nota(700 + Math.random() * 200, 0.05, 'sine', 0.08);
+        renderizarLojaLivros(); // Atualiza a tela
       };
     });
+
+    // Pagar
+    const btnPagar = document.getElementById('bib-btn-pagar');
+    if (btnPagar) {
+      btnPagar.onclick = () => {
+        const comprados = S.livrosComprados || [];
+        
+        Object.entries(carrinhoLivros).forEach(([id, q]) => {
+          const L = LIVROS[id];
+          if (!L) return;
+          
+          // Verifica se tem moedas
+          if ((S.moedas || 0) < L.preco * q) {
+            toastCompra('Moedas insuficientes para alguns itens! 😢');
+            return;
+          }
+
+          // Compra
+          S.moedas -= L.preco * q;
+          if (!comprados.includes(id)) comprados.push(id); // Como é livro, só precisa de 1 na estante
+        });
+
+        S.livrosComprados = comprados;
+        save();
+        
+        SOM.melodia([N.DO, N.MI, N.SOL, N.DO2], 0.08, 'sine', 0.12);
+        toastCompra('📚 Livros comprados!');
+        
+        carrinhoLivros = {}; // Limpa a cesta
+        renderizarLojaLivros(); // Atualiza a tela
+        desenharEstante(document.getElementById('biblioteca'));
+      };
+    }
 
     // Fechar
     const btnFechar = document.getElementById('bib-loja-fechar');
     if (btnFechar) btnFechar.onclick = () => {
+      carrinhoLivros = {}; // Limpa a cesta ao fechar
       painel.remove();
-      // Redesenha a estante (pra mostrar o fantasminha se tiver livro novo)
       const bib = document.getElementById('biblioteca');
       if (bib) desenharEstante(bib);
     };
-
-    // Clicar fora fecha
-    painel.onclick = (e) => {
-      if (e.target === painel) {
-        painel.remove();
-        const bib = document.getElementById('biblioteca');
-        if (bib) desenharEstante(bib);
-      }
-    };
   }, 50);
 }
-
 /* ---------- COMPRAR LIVRO ---------- */
 function comprarLivro(id) {
   const L = LIVROS[id];
