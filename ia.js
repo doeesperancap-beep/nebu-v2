@@ -2,75 +2,116 @@
    ia.js — O Motor da IA (Conexão e Leitura)
    ============================================================ */
 
-const WORKER_URL = 'https://nebo-ia.doeesperancap.workers.dev'; 
-const MEMORIA_MAX = 6; 
+const WORKER_URL = 'https://nebo-ia.doeesperancap.workers.dev';
+const MEMORIA_MAX = 6;          // quantas trocas (pergunta+resposta) ela lembra
 let memoriaConversa = [];
+
+const EXPRESSOES_VALIDAS = ['neutral','happy','sad','angry','curious','sleepy','carinho','surprised','sick','bored','dance'];
+const ACOES_VALIDAS = ['dancar','dormir','comer','estudar_25','estudar_5','parar_foco','nenhuma'];
+
+/* Tenta extrair um JSON de qualquer texto (aceita ```json ... ```) */
+function extrairJSON(txt) {
+  if (txt && typeof txt === 'object') return txt;
+  if (typeof txt !== 'string') return null;
+  const t = txt.trim().replace(/^```(?:json)?/i, '').replace(/```$/, '').trim();
+  try { return JSON.parse(t); } catch {}
+  const i = t.indexOf('{'), j = t.lastIndexOf('}');
+  if (i >= 0 && j > i) { try { return JSON.parse(t.slice(i, j + 1)); } catch {} }
+  return null;
+}
+
+/* Histórico que vai pra API: sempre começa com "user" */
+function recorteMemoria() {
+  const m = memoriaConversa.slice(-MEMORIA_MAX * 2);
+  while (m.length && m[0].role !== 'user') m.shift();
+  return m;
+}
+
+function guardarMemoriaDaResposta(obj) {
+  if (typeof adicionarMemoria !== 'function') return;
+  const m = obj.salvar_memoria;
+  if (typeof m === 'string' && m.trim()) {
+    adicionarMemoria('fatos', m.trim().slice(0, 200));
+  } else if (m && typeof m === 'object' && m.texto) {
+    const tipo = ['gostos', 'fatos', 'apelidos'].includes(m.tipo) ? m.tipo : 'fatos';
+    adicionarMemoria(tipo, String(m.texto).trim().slice(0, 200));
+  }
+}
 
 async function chamarIA(textoUsuario) {
   memoriaConversa.push({ role: 'user', content: textoUsuario });
+
+  const ctrl = new AbortController();
+  const timeout = setTimeout(() => ctrl.abort(), 20000);
 
   try {
     const resp = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ system: montarPrompt(), messages: memoriaConversa.slice(-MEMORIA_MAX) }),
+      body: JSON.stringify({ system: montarPrompt(), messages: recorteMemoria() }),
+      signal: ctrl.signal
     });
+    clearTimeout(timeout);
 
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
     const dados = await resp.json();
-    
-    // Se a Cloudflare devolver um erro, avisa e não tenta ler o JSON
-    if (dados.erro) {
-      return { fala: "Tive um sonho confuso (erro na nuvem).", expressoes: ['sad'], acao: 'nenhuma' };
+    if (dados.erro) throw new Error(String(dados.erro));
+
+    let obj = extrairJSON(dados.texto);
+    if (!obj || typeof obj.fala !== 'string') {
+      // A IA não mandou JSON: usa o texto bruto como fala
+      obj = { fala: String(dados.texto || '').slice(0, 300) || 'Hmm...', expressoes: ['neutral'], acao: 'nenhuma' };
     }
 
-    let obj;
-    try { 
-      obj = JSON.parse(dados.texto); 
-    } catch { 
-      // Se a IA quebrar o JSON, a gente tenta usar o texto bruto
-      obj = { fala: String(dados.texto).slice(0, 100), expressoes: ['neutral'], acao: 'nenhuma' }; 
-    }
-    
-    // Garante que a memória seja salva com segurança
-    if (obj.salvar_memoria && typeof obj.salvar_memoria === 'string') {
-      adicionarMemoria('fatos', obj.salvar_memoria);
-    }
-
-    // Garante que as expressões existam e sejam válidas
+    obj.fala = obj.fala.slice(0, 400);
     if (obj.expressao && !obj.expressoes) obj.expressoes = [obj.expressao];
-    if (!obj.expressoes || !Array.isArray(obj.expressoes)) obj.expressoes = ['neutral'];
+    if (!Array.isArray(obj.expressoes)) obj.expressoes = ['neutral'];
+    if (!ACOES_VALIDAS.includes(obj.acao)) obj.acao = 'nenhuma';
+
+    guardarMemoriaDaResposta(obj);
 
     memoriaConversa.push({ role: 'assistant', content: JSON.stringify(obj) });
     if (memoriaConversa.length > MEMORIA_MAX * 2) memoriaConversa = memoriaConversa.slice(-MEMORIA_MAX * 2);
-    
+
     return obj;
   } catch (e) {
-    return { fala: `Falha na rede: ${e.message}`, expressoes: ['sad'], acao: 'nenhuma' };
+    clearTimeout(timeout);
+    memoriaConversa.pop(); // tira a pergunta que ficou sem resposta
+    console.error('Erro IA:', e);
+    return {
+      fala: e.name === 'AbortError'
+        ? 'Demorei demais pra pensar... tenta de novo? 😅'
+        : 'Fiquei sem conexão com meus pensamentos... 😢',
+      expressoes: ['sad'],
+      acao: 'nenhuma'
+    };
   }
 }
 
 function aplicarResposta(resp) {
   if (!resp || !resp.fala) return;
-  
-  const validas = ['neutral','happy','sad','angry','curious','sleepy','carinho','surprised','sick','bored','dance'];
-  let lista = (resp.expressoes || []).filter(e => validas.includes(e));
-  if (lista.length === 0) lista = ['neutral'];
 
-  const tempoTotal = Math.max(4000, resp.fala.length * 90); 
+  let lista = (resp.expressoes || []).filter(e => EXPRESSOES_VALIDAS.includes(e)).slice(0, 3);
+  if (!lista.length) lista = ['neutral'];
+
+  const tempoTotal = Math.max(4000, resp.fala.length * 90);
   const tempoPorRosto = tempoTotal / lista.length;
 
-  lista.forEach((expressao, index) => {
+  say(resp.fala, tempoTotal);   // balão fica o tempo todo da fala
+
+  lista.forEach((expressao, i) => {
     setTimeout(() => {
-      set(expressao, tempoPorRosto, index === 0 ? resp.fala : '');
-    }, index * tempoPorRosto);
+      until = 0;                // libera: a resposta não pode ser bloqueada pelo "🤔"
+      set(expressao, tempoPorRosto);
+    }, i * tempoPorRosto);
   });
 
-  // Executa ações (se existirem)
-  if (resp.acao === 'dancar') startDance(6);
-  if (resp.acao === 'dormir') { S.energia = clamp(S.energia + 10); save(); }
-  if (resp.acao === 'comer') { foodTray(); }
-  if (resp.acao === 'estudar_25') iniciarCronometro(25);
-  if (resp.acao === 'estudar_5') iniciarCronometro(5);
-  if (resp.acao === 'parar_foco') pararCronometro();
-  if (resp.acao === 'cochilar') iniciarCochilo(2, false);
+  switch (resp.acao) {
+    case 'dancar':     startDance(6); break;
+    case 'dormir':     S.energia = clamp(S.energia + 10); save(); break;
+    case 'comer':      foodTray(); break;
+    case 'estudar_25': iniciarCronometro(25); break;
+    case 'estudar_5':  iniciarCronometro(5); break;
+    case 'parar_foco': pararCronometro(); break;
+  }
 }
