@@ -44,17 +44,11 @@
     document.getElementById('c3add').onclick = addHouse;
     document.getElementById('c3park').onclick = addPark;
 
-    const launch = document.createElement('button');
-    launch.id = 'bCidade3D';
-    launch.textContent = '🌆 Cidade 3D';
-    launch.onclick = open;
-    const bar = document.getElementById('bar');
-    if (bar) bar.appendChild(launch);
 
     // Three.js e controles oficiais carregados por CDN
     if (!window.THREE) {
       const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js';
+      script.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js';
       script.onload = loadControls;
       script.onerror = () => alert('Não consegui carregar a cidade 3D. Confira sua internet.');
       document.head.appendChild(script);
@@ -66,7 +60,7 @@
         return;
       }
       const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/examples/js/controls/OrbitControls.js';
+      script.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
       script.onload = setup;
       script.onerror = () => alert('Não consegui carregar os controles 3D.');
       document.head.appendChild(script);
