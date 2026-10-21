@@ -1770,7 +1770,40 @@ body[data-m=dizzy] .eye {
   padding: 5px 12px;
   border-radius: 20px;
 }
+/* Item que está no carrinho */
+.bib-loja-item.no-carrinho {
+  border-color: #f7d9e4;
+  background: #fff5f8;
+}
 
+/* Barra do carrinho que fica no fundo da lista */
+#bib-loja-carrinho {
+  padding: 12px 16px;
+  background: #f5e8f0;
+  border-top: 2px solid #e8d5f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 700;
+  color: #5d4f9e;
+  flex-shrink: 0;
+}
+
+.bib-btn-pagar {
+  background: #b8dfd0;
+  color: #2e6b52;
+  border: 0;
+  border-radius: 12px;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 2px 8px rgba(46, 107, 82, .2);
+  transition: transform .15s;
+}
+.bib-btn-pagar:active { transform: scale(.95); }
 /* ---------- LISTA de livros ---------- */
 #bib-loja-lista {
   padding: 14px;
