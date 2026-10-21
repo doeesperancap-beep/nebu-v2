@@ -4656,3 +4656,78 @@ async function sairDaSala() {
   
   painelJogos();
 }
+
+// ==========================================
+// MODO COCHILO (Dormir sozinha ou por comando)
+// ==========================================
+let cochiloTimer = null;
+let cochilando = false;
+let dormiuSozinha = false;
+
+function iniciarCochilo(minutos = 1, automatico = false) {
+  if (cochilando) return;
+  cochilando = true;
+  dormiuSozinha = automatico;
+  
+  P.classList.remove('on');
+  
+  // Cria uma tela de sono (fundo escuro e o Zzz)
+  let telaSono = document.getElementById('tela-sono');
+  if (!telaSono) {
+    telaSono = document.createElement('div');
+    telaSono.id = 'tela-sono';
+    telaSono.style.cssText = `
+      position: fixed; inset: 0; background: #000a; z-index: 9998;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: #fff; font-family: system-ui, sans-serif; backdrop-filter: blur(2px);
+    `;
+    document.body.appendChild(telaSono);
+  }
+
+  set('sleepy', minutos * 60000, automatico ? 'Zzz... (tô exausta) 😴' : 'Vou tirar um cochilo... Zzz 😴');
+  
+  telaSono.innerHTML = `
+    <h2 style="font-size: 20px; color: #f7d9e4; margin-bottom: 10px;">${automatico ? 'Recarregando energias...' : 'Cochilando...'}</h2>
+    <div style="font-size: 60px; animation: flt 2s infinite;">💤</div>
+    <p style="opacity: 0.5; margin-top: 20px; text-align:center;">Toque na tela se precisar de mim</p>
+  `;
+
+  // Se o usuário tocar na tela, ela acorda
+  telaSono.onpointerdown = () => acordarCochilo();
+
+  cochiloTimer = setTimeout(() => {
+    // Acordou sozinha (o tempo acabou)
+    finalizarCochilo(true);
+  }, minutos * 60000);
+}
+
+function acordarCochilo() {
+  if (!cochilando) return;
+  
+  // Se for acordada, perde humor
+  S.humor = clamp(S.humor - 15);
+  save();
+  
+  clearTimeout(cochiloTimer);
+  
+  if (dormiuSozinha) {
+    set('angry', 3000, 'Aff, eu tava descansando... 😠');
+  } else {
+    set('surprised', 3000, 'Ai! Me assustou! 😳');
+  }
+  
+  finalizarCochilo(false);
+}
+
+function finalizarCochilo(acordouBem) {
+  cochilando = false;
+  const telaSono = document.getElementById('tela-sono');
+  if (telaSono) telaSono.remove();
+  
+  if (acordouBem) {
+    S.energia = clamp(S.energia + 30); // Recupera muita energia
+    save();
+    SOM.melodia([N.DO, N.MI, N.SOL], 0.1, 'sine', 0.1);
+    set('happy', 3000, 'Aaah, que sono bom! Tô renovada! ☀️');
+  }
+}
