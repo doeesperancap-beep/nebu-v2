@@ -1997,7 +1997,8 @@ function startDino() {
           SOM.melodia([N.DO_BAIXO, N.DO_BAIXO], 0.2, 'sawtooth', 0.1);
           say('Ai! Bati no bolo 😢');
         }
-        return false;
+         return false;
+      }
 
       // Passou? Conta
       if (k.x < nebo.x - 40 && !k._contado) {
@@ -3921,9 +3922,10 @@ function renderizarLojaLivros() {
     carrinhoLivros = {};
     painel.remove();
     const bib = document.getElementById('biblioteca');
-    if (bib) desenharEstante(bib);
+      if (bib) desenharEstante(bib);
   };
-  
+}
+
 /* ---------- COMPRAR LIVRO ---------- */
 function comprarLivro(id) {
   const L = LIVROS[id];
