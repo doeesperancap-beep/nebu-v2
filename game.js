@@ -2168,7 +2168,24 @@ function startDance(sec = 10) {
 }
 
 function joyTick() {
+  // O código antigo de dançar quando está feliz...
   if (S.humor >= 99 && mood === 'neutral' && !gOn && Math.random() < .01) startDance(5);
+  
+  // 🧠 NOVO: Pensamentos próprios (como o Aibi)
+  // Chance de 3% a cada 5 segundos de ter um pensamento (se ela não estiver ocupada)
+  if (!gOn && !S.conectado && Math.random() < 0.03) {
+    const pensamentos = [
+      { texto: 'Será que as estrelas sentem frio? 🌌', exp: 'curious' },
+      { texto: 'Eu queria comer um doce agora... 🍰', exp: 'sad' },
+      { texto: 'Você tá aí? Tô entediada... 🥱', exp: 'bored' },
+      { texto: 'Acho que ouvi um barulho! 👀', exp: 'surprised' },
+      { texto: 'Cada vez que você respira, nasce uma estrela. ✨', exp: 'carinho' }
+    ];
+    
+    // Escolhe um pensamento aleatório
+    const p = rnd(pensamentos);
+    set(p.exp, 5000, p.texto);
+  }
 }
 
 /* ============ MUNDO (modo Nébula) ============ */
