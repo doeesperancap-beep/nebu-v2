@@ -65,12 +65,15 @@ function aplicarResposta(resp) {
     }, index * tempoPorRosto);
   });
 
-  // Executa ações (se existirem)
-  if (resp.acao === 'dancar') startDance(6);
-  if (resp.acao === 'dormir') { S.energia = clamp(S.energia + 10); save(); }
-  if (resp.acao === 'comer') { foodTray(); }
-  if (resp.acao === 'estudar_25') iniciarCronometro(25);
-  if (resp.acao === 'estudar_5') iniciarCronometro(5);
-  if (resp.acao === 'parar_foco') pararCronometro();
-  if (resp.acao === 'cochilar') iniciarCochilo(2, false);
+  // Executa ações com segurança (só se a função existir)
+  if (resp.acao === 'dancar' && typeof startDance === 'function') startDance(6);
+  if (resp.acao === 'dormir' && typeof clamp === 'function') { S.energia = clamp(S.energia + 10); save(); }
+  if (resp.acao === 'comer' && typeof foodTray === 'function') foodTray();
+  if (resp.acao === 'cochilar' && typeof iniciarCochilo === 'function') iniciarCochilo(2, false);
+  
+  if (resp.acao && resp.acao.startsWith('estudar_') && typeof iniciarCronometro === 'function') {
+    const minutos = parseInt(resp.acao.replace('estudar_', ''));
+    if (!isNaN(minutos)) iniciarCronometro(minutos);
+  }
+  if (resp.acao === 'parar_foco' && typeof pararCronometro === 'function') pararCronometro();
 }
