@@ -3,170 +3,213 @@
    ============================================================ */
 
 let reconhecimento = null;
-let ouvindo = false;
-let modoPassivo = false; 
+let ouvindo = false;        // o usuário ligou o microfone
+let modoPassivo = false;    // true = só espera ouvir o nome dela
+let processando = false;    // true = pensando / falando (mic fica desligado)
 let timerSilencio = null;
 
-function iniciarVoz(modo = 'passivo') {
+const escapeRegex = s => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+function nomesGatilho() {
+  const nome = (S.nome || '').toLowerCase().trim();
+  return [...new Set([nome, 'nebo', 'nebulosa'].filter(Boolean))];
+}
+
+function temGatilho(texto) {
+  const t = texto.toLowerCase();
+  return nomesGatilho().some(n => t.includes(n));
+}
+
+function limparPergunta(texto) {
+  const re = new RegExp(nomesGatilho().map(escapeRegex).join('|'), 'gi');
+  return texto.replace(re, ' ').replace(/\s+/g, ' ')
+              .replace(/^[\s,.:;!?-]+|[\s,.:;!?-]+$/g, '').trim();
+}
+
+function descartarReconhecimento() {
+  if (!reconhecimento) return;
+  const r = reconhecimento;
+  reconhecimento = null;
+  r.onresult = r.onend = r.onerror = null;
+  try { r.abort(); } catch (e) {}
+}
+
+function resetarTimer() {
+  clearTimeout(timerSilencio);
+  timerSilencio = setTimeout(() => {
+    if (!modoPassivo && ouvindo && !processando) {
+      say('Vou voltar a dormir. Me chame se precisar. 😴');
+      iniciarVoz('passivo', true);
+    }
+  }, 8000);
+}
+
+function iniciarVoz(modo = 'passivo', silencioso = false) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) {
     say('Meu ouvido não funciona nesse navegador... 😢');
     return;
   }
 
-  if (ouvindo) pararVoz();
+  descartarReconhecimento();
+  clearTimeout(timerSilencio);
 
+  ouvindo = true;
+  processando = false;
   modoPassivo = (modo === 'passivo');
-  
-  reconhecimento = new SR();
-  reconhecimento.lang = 'pt-BR';
-  reconhecimento.continuous = true; 
-  reconhecimento.interimResults = false; // Só pega a frase quando você terminar de falar
 
-  reconhecimento.onresult = async (e) => {
-    const texto = e.results[e.results.length - 1][0].transcript.trim();
-    const textoLower = texto.toLowerCase();
+  const rec = new SR();
+  rec.lang = 'pt-BR';
+  rec.continuous = true;
+  rec.interimResults = false;
+  reconhecimento = rec;
 
-    // MODO PASSIVO: Ouve tudo, mas só reage se ouvir o nome dela
+  rec.onresult = (e) => {
+    if (processando) return;
+
+    // Junta só os trechos NOVOS e finalizados
+    let texto = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) texto += e.results[i][0].transcript + ' ';
+    }
+    texto = texto.trim();
+    if (texto.length < 2) return;
+
+    // MODO PASSIVO: só acorda se ouvir o nome
     if (modoPassivo) {
-      const nomeDela = (S.nome || 'nebo').toLowerCase(); 
-      
-      if (textoLower.includes(nomeDela) || textoLower.includes('nebo') || textoLower.includes('nebulosa')) {
-        modoPassivo = false; // Acordou!
-        
-        // Se ela já ouviu a pergunta junto com o nome, a gente tenta pescar a pergunta
-        const perguntaLimpa = texto.replace(new RegExp(nomeDela, 'gi'), '').replace(/nebo|nebulosa/gi, '').trim();
-        
-        if (perguntaLimpa.length > 3) {
-          // Se a pessoa falou "Nebo, quanto é 2+2?" de uma vez só
-          processarPergunta(perguntaLimpa);
-        } else {
-          // Se a pessoa só falou "Nebo", ela espera a pergunta
-          say('Oi! Pode falar. 👂'); 
-          atualizarBotaoVoz();
-          resetarTimer();
+      if (!temGatilho(texto)) return;
+      modoPassivo = false;
+      const pergunta = limparPergunta(texto);
+      if (pergunta.length > 3) {
+        processarPergunta(pergunta);       // "Nebo, quanto é 2+2?" de uma vez
+      } else {
+        say('Oi! Pode falar. 👂');
+        set('curious', 4000);
+        atualizarBotaoVoz();
+        resetarTimer();
+      }
+      return;
+    }
+
+    // MODO ATIVO: já está conversando
+    const pergunta = limparPergunta(texto);
+    if (pergunta.length > 1) processarPergunta(pergunta);
+    else resetarTimer();
+  };
+
+  rec.onerror = (e) => {
+    if (rec !== reconhecimento) return;
+    console.log('Erro mic:', e.error);
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+      pararVoz(true);
+      say('Preciso de permissão pra usar o microfone! 🎤');
+    }
+  };
+
+  rec.onend = () => {
+    if (rec !== reconhecimento) return;              // instância antiga, ignora
+    if (ouvindo && !processando) {
+      setTimeout(() => {
+        if (rec === reconhecimento && ouvindo && !processando) {
+          try { rec.start(); } catch (e) {}
         }
-      }
-      return; 
-    }
-
-    // MODO ATIVO: A pessoa já falou o nome e agora fez a pergunta
-    if (!texto || texto.length < 2) return;
-    
-    clearTimeout(timerSilencio);
-    processarPergunta(texto);
-  };
-
-  reconhecimento.onerror = (e) => { 
-    console.log('Erro mic:', e.error); 
-    if (e.error === 'not-allowed') {
-       say('Preciso de permissão pra usar o microfone! 🎤');
-       ouvindo = false;
+      }, 300);
     }
   };
-  
-  reconhecimento.onend = () => { 
-    if (ouvindo && !speechSynthesis.speaking) {
-      try { reconhecimento.start(); } catch(e) {}
-    }
-  };
-
-  function resetarTimer() {
-    clearTimeout(timerSilencio);
-    timerSilencio = setTimeout(() => {
-      if (!modoPassivo && ouvindo) {
-        say('Vou voltar a dormir. Me chame se precisar. 😴');
-        iniciarVoz('passivo'); // Volta para o modo surdo
-      }
-    }, 6000); // 6 segundos de silêncio = volta a dormir
-  }
 
   try {
-    reconhecimento.start();
-    ouvindo = true;
-    if (modoPassivo) {
-      // Não fala nada em voz alta pra não atrapalhar, só muda o botão
-      atualizarBotaoVoz();
-    } else { 
-      say('Tô ouvindo... 👂'); 
-      resetarTimer(); 
-      atualizarBotaoVoz(); 
-    }
-  } catch(e) {
-    console.error(e);
+    rec.start();
+  } catch (err) {
+    console.error(err);
     ouvindo = false;
   }
+
+  if (!modoPassivo) {
+    if (!silencioso) say('Tô ouvindo... 👂');
+    resetarTimer();
+  }
+  atualizarBotaoVoz();
 }
 
-// Função que realmente chama a IA e fala (Desliga o mic para não dar eco)
-async function processarPergunta(texto) {
-  reconhecimento.stop(); // Desliga o microfone IMEDIATAMENTE
-  
-  const nomeDela = (S.nome || 'nebo').toLowerCase();
-  const perguntaLimpa = texto.replace(new RegExp(nomeDela, 'gi'), '').replace(/nebo|nebulosa/gi, '').trim();
-  if (!perguntaLimpa) {
-    iniciarVoz('passivo');
-    return;
-  }
+// Chama a IA e fala (microfone fica desligado até ela terminar: sem eco)
+async function processarPergunta(pergunta) {
+  processando = true;
+  clearTimeout(timerSilencio);
+  descartarReconhecimento();
+  atualizarBotaoVoz();
 
-  set('curious', 5000, '🤔 ...');
-  
-  const resp = await chamarIA(perguntaLimpa);
+  set('curious', 8000, '🤔 ...');
+
+  const resp = await chamarIA(pergunta);
   aplicarResposta(resp);
-  
-  // Fala a resposta e SÓ LIGA O MIC DE NOVO QUANDO ELA TERMINAR DE FALAR
+
   falarComCallback(resp.fala, () => {
-    if (ouvindo) {
-      iniciarVoz('passivo'); // Volta a escutar o nome
-    }
+    processando = false;
+    if (ouvindo) iniciarVoz('ativo', true);   // janela de 8s pra continuar a conversa
+    else atualizarBotaoVoz();
   });
 }
 
-function pararVoz() {
+function pararVoz(silencioso = false) {
   ouvindo = false;
   modoPassivo = false;
+  processando = false;
   clearTimeout(timerSilencio);
-  if (reconhecimento) {
-    try { reconhecimento.stop(); } catch(e) {}
-  }
-  say('Microfone desligado. 🤫');
+  descartarReconhecimento();
+  try { speechSynthesis.cancel(); } catch (e) {}
+  if (!silencioso) say('Microfone desligado. 🤫');
   atualizarBotaoVoz();
 }
 
 function falarComCallback(texto, callback) {
-  if (!texto || !window.speechSynthesis) {
+  let acabou = false;
+  let seguranca;
+  const fim = () => {
+    if (acabou) return;
+    acabou = true;
+    clearTimeout(seguranca);
     if (callback) callback();
-    return;
-  }
-  
-  const textoLimpo = texto.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F1E6}-\u{1F1FF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F600}-\u{1F64F}]/gu, '').trim();
+  };
+
+  const limpo = String(texto || '')
+    .replace(/[\p{Extended_Pictographic}\uFE0F\u200d]/gu, '')
+    .trim();
+
+  if (!limpo || !window.speechSynthesis) { fim(); return; }
+
+  // Alguns navegadores às vezes não disparam onend: rede de segurança
+  seguranca = setTimeout(fim, limpo.length * 120 + 5000);
 
   speechSynthesis.cancel();
-  const u = new SpeechSynthesisUtterance(textoLimpo);
+  const u = new SpeechSynthesisUtterance(limpo);
   u.lang = 'pt-BR';
   u.rate = 0.95;
   u.pitch = S.pers === 'temperamental' ? 1.1 : 1.0;
-  
-  const vozes = window.speechSynthesis.getVoices();
-  const vozPT = vozes.find(v => v.lang.includes('pt-BR') && v.name.includes('Google')) || 
+
+  const vozes = speechSynthesis.getVoices();
+  const vozPT = vozes.find(v => v.lang.includes('pt-BR') && v.name.includes('Google')) ||
                 vozes.find(v => v.lang.includes('pt-BR'));
   if (vozPT) u.voice = vozPT;
-  
-  u.onend = () => {
-    if (callback) callback(); // Avisa quando ela terminar de falar
-  };
-  
+
+  u.onend = fim;
+  u.onerror = fim;
   speechSynthesis.speak(u);
 }
 
 function atualizarBotaoVoz() {
   const btn = document.getElementById('bVoz');
   if (!btn) return;
-  if (ouvindo) {
-    btn.style.background = modoPassivo ? '#ffd580' : '#ffb3b3';
-    btn.textContent = modoPassivo ? `👂 Diga "${S.nome || 'Nebo'}"` : '🔴 Ouvindo...';
-  } else {
+  if (!ouvindo) {
     btn.style.background = '#ffffff14';
     btn.textContent = '🎤 Falar';
+  } else if (processando) {
+    btn.style.background = '#d8c4ec';
+    btn.textContent = '💭 Pensando...';
+  } else if (modoPassivo) {
+    btn.style.background = '#ffd580';
+    btn.textContent = `👂 Diga "${S.nome || 'Nebo'}"`;
+  } else {
+    btn.style.background = '#ffb3b3';
+    btn.textContent = '🔴 Ouvindo...';
   }
 }
