@@ -2168,24 +2168,7 @@ function startDance(sec = 10) {
 }
 
 function joyTick() {
-  // O código antigo de dançar quando está feliz...
   if (S.humor >= 99 && mood === 'neutral' && !gOn && Math.random() < .01) startDance(5);
-  
-  // 🧠 NOVO: Pensamentos próprios (como o Aibi)
-  // Chance de 3% a cada 5 segundos de ter um pensamento (se ela não estiver ocupada)
-  if (!gOn && !S.conectado && Math.random() < 0.03) {
-    const pensamentos = [
-      { texto: 'Será que as estrelas sentem frio? 🌌', exp: 'curious' },
-      { texto: 'Eu queria comer um doce agora... 🍰', exp: 'sad' },
-      { texto: 'Você tá aí? Tô entediada... 🥱', exp: 'bored' },
-      { texto: 'Acho que ouvi um barulho! 👀', exp: 'surprised' },
-      { texto: 'Cada vez que você respira, nasce uma estrela. ✨', exp: 'carinho' }
-    ];
-    
-    // Escolhe um pensamento aleatório
-    const p = rnd(pensamentos);
-    set(p.exp, 5000, p.texto);
-  }
 }
 
 /* ============ MUNDO (modo Nébula) ============ */
@@ -2485,7 +2468,7 @@ setTimeout(mundo, 400);
 /* ============ PAINÉIS DOS LUGARES (placeholders) ============ */
 /* ============ MERCADO ============ */
 let carrinho = {};   // { '🍎': 2, '🍕': 1 }
-let carrinhoLivros = {}; // { 'divinos_rivais': 2, 'hp_pedra': 1 }
+
 /* ============ MÚSICA DO MERCADO ============ */
 let musicaMercado = null;
 
@@ -3796,52 +3779,45 @@ function renderizarLojaLivros() {
       <div id="bib-loja-lista">
   `;
 
-  const ordenados = Object.entries(LIVROS).sort((a, b) => a[1].nome.localeCompare(b[1].nome, 'pt-BR'));
+  // Ordena alfabeticamente por nome
+  const ordenados = Object.entries(LIVROS).sort((a, b) =>
+    a[1].nome.localeCompare(b[1].nome, 'pt-BR')
+  );
 
   ordenados.forEach(([id, L]) => {
     const jaTem = comprados.includes(id);
-    const noCarrinho = carrinhoLivros[id] || 0;
     const podeComprar = (S.moedas || 0) >= L.preco;
-    
-    let classes = ['bib-loja-item'];
-    if (jaTem) classes.push('comprado');
-    else if (!podeComprar) classes.push('sem-moedas');
-    if (noCarrinho > 0) classes.push('no-carrinho'); // Nova classe visual
+    const classes = [
+      'bib-loja-item',
+      jaTem ? 'comprado' : '',
+      (!jaTem && !podeComprar) ? 'sem-moedas' : ''
+    ].filter(Boolean).join(' ');
+
+    // Gradiente da capa
+    const cor1 = L.cor;
+    const cor2 = ajustarCor(L.cor, -25);
 
     html += `
-      <div class="${classes.join(' ')}" data-id="${id}">
-        <div class="bib-loja-capa" style="background:linear-gradient(135deg, ${L.cor} 0%, ${ajustarCor(L.cor, -25)} 60%, ${L.cor} 100%); --bib-cor2:${L.cor2 || '#d4af37'};"></div>
+      <div class="${classes}" data-id="${id}">
+        <div class="bib-loja-capa"
+             style="background:linear-gradient(135deg, ${cor1} 0%, ${cor2} 60%, ${cor1} 100%);
+                    --bib-cor2:${L.cor2 || '#d4af37'};">
+        </div>
         <div class="bib-loja-info">
           <div class="bib-loja-nome">${L.nome}</div>
           <div class="bib-loja-autor">${L.autor}</div>
-          ${jaTem 
-            ? `<div class="bib-loja-preco comprado">✓ COMPRADO</div>` 
-            : `<div class="bib-loja-preco">🪙 ${L.preco} ${noCarrinho > 0 ? `<span style="color:#f7d9e4">(x${noCarrinho})</span>` : ''}</div>`
+          ${jaTem
+            ? `<div class="bib-loja-preco comprado">✓ COMPRADO</div>`
+            : `<div class="bib-loja-preco">🪙 ${L.preco}</div>`
           }
         </div>
       </div>
     `;
   });
 
-  // Calcula o total do carrinho
-  let totalCarrinho = 0;
-  Object.entries(carrinhoLivros).forEach(([id, q]) => {
-    if (LIVROS[id]) totalCarrinho += LIVROS[id].preco * q;
-  });
-
-  html += `</div>`;
-
-  // Área do carrinho (só aparece se tiver algo)
-  if (totalCarrinho > 0) {
-    html += `
-      <div id="bib-loja-carrinho">
-        <div>🛒 Carrinho: 🪙 ${totalCarrinho}</div>
-        <button id="bib-btn-pagar" class="bib-btn-pagar">Pagar</button>
-      </div>
-    `;
-  }
-
   html += `
+      </div>
+
       <div id="bib-loja-rodape">
         <div id="bib-loja-progresso">
           📚 ${comprados.length} / ${total} livros na coleção
@@ -3856,62 +3832,34 @@ function renderizarLojaLivros() {
 
   // Handlers
   setTimeout(() => {
-    // Adicionar ao carrinho
+    // Clicar em cada livro
     painel.querySelectorAll('.bib-loja-item').forEach(el => {
       el.onclick = () => {
         const id = el.dataset.id;
-        const comprados = S.livrosComprados || [];
-        if (comprados.includes(id)) return; // Já tem, não faz nada
-        
-        carrinhoLivros[id] = (carrinhoLivros[id] || 0) + 1;
-        SOM.nota(700 + Math.random() * 200, 0.05, 'sine', 0.08);
-        renderizarLojaLivros(); // Atualiza a tela
+        comprarLivro(id);
       };
     });
-
-    // Pagar
-    const btnPagar = document.getElementById('bib-btn-pagar');
-    if (btnPagar) {
-      btnPagar.onclick = () => {
-        const comprados = S.livrosComprados || [];
-        
-        Object.entries(carrinhoLivros).forEach(([id, q]) => {
-          const L = LIVROS[id];
-          if (!L) return;
-          
-          // Verifica se tem moedas
-          if ((S.moedas || 0) < L.preco * q) {
-            toastCompra('Moedas insuficientes para alguns itens! 😢');
-            return;
-          }
-
-          // Compra
-          S.moedas -= L.preco * q;
-          if (!comprados.includes(id)) comprados.push(id); // Como é livro, só precisa de 1 na estante
-        });
-
-        S.livrosComprados = comprados;
-        save();
-        
-        SOM.melodia([N.DO, N.MI, N.SOL, N.DO2], 0.08, 'sine', 0.12);
-        toastCompra('📚 Livros comprados!');
-        
-        carrinhoLivros = {}; // Limpa a cesta
-        renderizarLojaLivros(); // Atualiza a tela
-        desenharEstante(document.getElementById('biblioteca'));
-      };
-    }
 
     // Fechar
     const btnFechar = document.getElementById('bib-loja-fechar');
     if (btnFechar) btnFechar.onclick = () => {
-      carrinhoLivros = {}; // Limpa a cesta ao fechar
       painel.remove();
+      // Redesenha a estante (pra mostrar o fantasminha se tiver livro novo)
       const bib = document.getElementById('biblioteca');
       if (bib) desenharEstante(bib);
     };
+
+    // Clicar fora fecha
+    painel.onclick = (e) => {
+      if (e.target === painel) {
+        painel.remove();
+        const bib = document.getElementById('biblioteca');
+        if (bib) desenharEstante(bib);
+      }
+    };
   }, 50);
 }
+
 /* ---------- COMPRAR LIVRO ---------- */
 function comprarLivro(id) {
   const L = LIVROS[id];
@@ -4354,6 +4302,282 @@ $('bBrincar').onclick = () => panel(
 );
 $('bMundo').onclick = mundo;
 $('bXarope').onclick = xarope;
+
+
+/* ============ CASA DA NÉBULA ============ */
+$('bCasa').onclick = abrirCasa;
+
+const CASA_CONFIG = {
+  // Por enquanto só 1 tipo; depois a gente adiciona mais
+  tipos: {
+    single_home: {
+      nome: 'Single Home',
+      desc: 'Uma casinha aconchegante pra começar',
+      preco: 150,
+      tipo: 'pequena'
+    }
+  }
+};
+
+function abrirCasa() {
+  // Fecha painel se estiver aberto
+  P.classList.remove('on');
+
+  // Remove versão antiga se existir
+  let casa = document.getElementById('casa');
+  if (casa) casa.remove();
+
+  // Cria a tela
+  casa = document.createElement('div');
+  casa.id = 'casa';
+
+  // Se ainda não tem casa → mostra tela de comprar
+  if (!S.casa || !S.casa.tipo) {
+    casa.innerHTML = renderComprarCasa();
+    document.body.appendChild(casa);
+    ligarBotoesComprarCasa(casa);
+    return;
+  }
+
+   // Já tem casa → abre o interior
+  casa.innerHTML = renderInteriorCasa();
+  document.body.appendChild(casa);
+  ligarBotoesCasa(casa);
+
+  // Botões de navegação já ficam dentro do HTML
+}
+
+/* ---------- TELA: COMPRAR CASA ---------- */
+function renderComprarCasa() {
+  const tipos = CASA_CONFIG.tipos;
+  const moedas = S.moedas || 0;
+
+  let cards = '';
+  for (const [id, t] of Object.entries(tipos)) {
+    const podeComprar = moedas >= t.preco;
+    cards += `
+      <div class="casa-card">
+        <div class="casa-preview">
+          <div class="casa-porta"></div>
+          <div class="casa-janela-mini"></div>
+          <div class="casa-janela-mini dir"></div>
+        </div>
+        <div class="casa-nome">🏠 ${t.nome}</div>
+        <div class="casa-desc">${t.desc}</div>
+        <div class="casa-preco">🪙 ${t.preco}</div>
+        <button class="casa-btn-comprar" data-casa="${id}" ${podeComprar ? '' : 'disabled'}>
+          ${podeComprar ? '✓ Comprar' : '🪙 Moedas insuficientes'}
+        </button>
+      </div>
+    `;
+  }
+
+  return `
+    <button id="casa-sair" class="bib-btn-topo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6"/>
+        <path d="M21 12H9"/>
+      </svg>
+      <span>Sair</span>
+    </button>
+
+    <div id="casa-sem-casa">
+      <h1>🏠 Sua Casa</h1>
+      <p class="sub">Você ainda não tem uma casa!<br>Escolha uma pra começar:</p>
+      ${cards}
+      <div class="casa-moedas-info">Você tem: 🪙 ${moedas}</div>
+    </div>
+  `;
+}
+
+function ligarBotoesComprarCasa(casa) {
+  // Sair
+  const sair = casa.querySelector('#casa-sair');
+  if (sair) sair.onclick = () => casa.remove();
+
+  // Comprar
+  casa.querySelectorAll('[data-casa]').forEach(btn => {
+    btn.onclick = () => {
+      const id = btn.dataset.casa;
+      const t = CASA_CONFIG.tipos[id];
+      if (!t) return;
+      if ((S.moedas || 0) < t.preco) return;
+
+      // Compra!
+      S.moedas -= t.preco;
+      S.casa = {
+        tipo: id,
+        compradaEm: Date.now()
+      };
+      save();
+
+      SOM.melodia([N.DO, N.MI, N.SOL, N.DO2], 0.12, 'sine', 0.14);
+      vib([30, 40, 30]);
+
+      // Recarrega a tela (agora abre o interior)
+      casa.remove();
+      setTimeout(abrirCasa, 300);
+    };
+  });
+}
+
+/* ---------- TELA: INTERIOR DA CASA ---------- */
+function renderInteriorCasa() {
+  return `
+    <button id="casa-sair" class="bib-btn-topo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6"/>
+        <path d="M21 12H9"/>
+      </svg>
+      <span>Sair</span>
+    </button>
+
+    <div id="casa-interior">
+      <div id="casa-parede"></div>
+
+      <div id="casa-janela">
+        <div id="casa-janela-caixilho"></div>
+      </div>
+
+      <div id="casa-luz"></div>
+      <div id="casa-chao"></div>
+      <div id="casa-tapete"></div>
+    </div>
+
+    <!-- Botões de navegação -->
+    <div id="casa-nav">
+      <button class="casa-nav-btn" data-ir="rua">
+        🚪 Sair pra rua
+      </button>
+      <button class="casa-nav-btn" data-ir="varanda">
+        🌿 Ir pro quintal
+      </button>
+    </div>
+  `;
+}
+
+/* ---------- TELA: FACHADA (lado de fora) ---------- */
+function renderFachadaCasa() {
+  return `
+    <button id="casa-sair" class="bib-btn-topo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6"/>
+        <path d="M21 12H9"/>
+      </svg>
+      <span>Sair</span>
+    </button>
+
+    <div id="casa-fachada">
+      <div id="casa-ceu"></div>
+      <div id="casa-sol"></div>
+      <div id="casa-nuvens">☁️ ☁️</div>
+
+      <div id="casa-predio">
+        <div id="casa-telhado"></div>
+        <div id="casa-corpo">
+          <div id="casa-porta-externa"></div>
+          <div id="casa-janela-externa esq"></div>
+          <div id="casa-janela-externa dir"></div>
+        </div>
+      </div>
+
+      <div id="casa-rua"></div>
+    </div>
+
+    <div id="casa-nav">
+      <button class="casa-nav-btn" data-ir="interior">
+        🚪 Entrar em casa
+      </button>
+    </div>
+  `;
+}
+
+/* ---------- TELA: VARANDA (quintal) ---------- */
+function renderVarandaCasa() {
+  return `
+    <button id="casa-sair" class="bib-btn-topo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M15 18l-6-6 6-6"/>
+        <path d="M21 12H9"/>
+      </svg>
+      <span>Sair</span>
+    </button>
+
+    <div id="casa-varanda">
+      <!-- Céu noturno (igual à sua imagem de referência) -->
+      <div id="casa-varanda-ceu"></div>
+
+      <!-- Estrelinhas -->
+      <div id="casa-varanda-estrelas"></div>
+
+      <!-- Cerca de madeira no fundo -->
+      <div id="casa-varanda-cerca"></div>
+
+      <!-- Parede de pedras -->
+      <div id="casa-varanda-pedras"></div>
+
+      <!-- Postes de luz com lâmpadas penduradas -->
+      <div id="casa-varanda-postes">
+        <div class="casa-lampada" style="left:15%"></div>
+        <div class="casa-lampada" style="left:50%"></div>
+        <div class="casa-lampada" style="left:85%"></div>
+      </div>
+
+      <!-- Fio com luzinhas -->
+      <div id="casa-varanda-fio"></div>
+
+      <!-- Grama -->
+      <div id="casa-varanda-grama"></div>
+
+      <!-- Deck de madeira (chão) -->
+      <div id="casa-varanda-deck"></div>
+    </div>
+
+    <div id="casa-nav">
+      <button class="casa-nav-btn" data-ir="interior">
+        🏠 Voltar pra dentro
+      </button>
+    </div>
+  `;
+}
+
+function ligarBotoesCasa(casa) {
+  const sair = casa.querySelector('#casa-sair');
+  if (sair) sair.onclick = () => casa.remove();
+
+  // Navegação entre as telas
+  casa.querySelectorAll('[data-ir]').forEach(btn => {
+    btn.onclick = () => {
+      const destino = btn.dataset.ir;
+      casa.remove();
+      // Pequeno delay pra dar sensação de "entrar/sair"
+      setTimeout(() => {
+        abrirCasaEm(destino);
+      }, 150);
+    };
+  });
+}
+
+/* Abre a casa direto numa tela específica (interior, rua, varanda) */
+function abrirCasaEm(tela) {
+  let casa = document.getElementById('casa');
+  if (casa) casa.remove();
+
+  casa = document.createElement('div');
+  casa.id = 'casa';
+
+  if (tela === 'rua')          casa.innerHTML = renderFachadaCasa();
+  else if (tela === 'varanda') casa.innerHTML = renderVarandaCasa();
+  else                         casa.innerHTML = renderInteriorCasa();
+
+  document.body.appendChild(casa);
+  ligarBotoesCasa(casa);
+}
+
+function ligarBotoesCasa(casa) {
+  const sair = casa.querySelector('#casa-sair');
+  if (sair) sair.onclick = () => casa.remove();
+}
 /* ============ XAROPE (remédio quando doente) ============ */
 function xarope() {
   if (!S.sick || S.sick <= Date.now()) {
