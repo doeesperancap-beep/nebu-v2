@@ -2309,7 +2309,7 @@ const CIDADE_PREDIOS = {
 
   // Meio (parque, borboletas, área verde)
   borboletas:   { x: 13, y: 55, w: 20, h: 18, nome: '🦋 Espaço Borboletas', fala: 'Borboletas! 🦋' },
-  parque:       { x: 36, y: 52, w: 26, h: 20, nome: '🌳 Parque',            fala: 'Vou passear! 🌳' },
+  parque: { x: 36, y: 52, w: 26, h: 20, nome: '🌳 Parque', fala: 'Vou passear!' }
   praca:        { x: 66, y: 55, w: 22, h: 18, nome: '🌿 Área Verde',        fala: 'Que calmo aqui...' },
 
   // Fileira de baixo (prédios pequenos)
