@@ -4552,3 +4552,43 @@ function pararCronometro() {
   say('Foco cancelado. 😌');
   set('neutral', 3000);
 }
+// ==========================================
+// REAÇÃO AO CLIMA 
+// ==========================================
+async function checarClima() {
+  if (!navigator.geolocation) return;
+  
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    try {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      
+      // API gratuita, sem chave
+      const resp = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+      const dados = await resp.json();
+      const temp = dados.current_weather.temperature;
+      const codigoClima = dados.current_weather.weathercode;
+
+      // Códigos de chuva: 51 a 67, 80 a 82, 95 a 99
+      const taChovendo = (codigoClima >= 51 && codigoClima <= 67) || (codigoClima >= 80 && codigoClima <= 82) || (codigoClima >= 95);
+      
+      if (taChovendo) {
+        set('sad', 6000, 'Tá chovendo lá fora... que preguiça de estudar. ☔');
+      } else if (temp > 30) {
+        set('sleepy', 6000, 'Nossa, que calor! Tô derretendo... ☀️');
+      } else if (temp < 15) {
+        set('surprised', 6000, 'Tá frio hoje! Vem me dar um abraço? ❄️');
+      } else {
+        set('happy', 6000, 'O tempo tá ótimo hoje! Vamos aproveitar? 🌤️');
+      }
+    } catch (e) {
+      console.log("Não consegui ver o clima:", e);
+    }
+  }, () => {
+    console.log("Permissão de localização negada.");
+  });
+}
+
+// Chama a função quando o jogo abrir e depois a cada 2 horas
+setTimeout(checarClima, 10000); 
+setInterval(checarClima, 7200000); 
