@@ -1974,4 +1974,12 @@ body[data-m=dizzy] .eye {
   text-align: center;
 }
 
-
+/* Modo Cidade: esconder toda a interface da Nébula */
+body.modo-cidade #screen,
+body.modo-cidade #bubble,
+body.modo-cidade #panel,
+body.modo-cidade #estado,
+body.modo-cidade #bar,
+body.modo-cidade #doceria {
+  display: none !important;
+}
