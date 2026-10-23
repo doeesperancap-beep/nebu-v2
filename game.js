@@ -2263,39 +2263,6 @@ function panel(h) {
 /* ============ ESCOLHA DE MODO ============ */
 function modoPanel() {
   P.innerHTML = `
-    <h3>O que é este dispositivo?</h3>
-    <p style="opacity:.7;font-size:14px;margin:8px 0 16px">
-      Escolha uma vez. Depois só muda nas configurações.
-    </p>
-    <button data-modo="nebo" style="font-size:18px;padding:16px">
-      💗 É uma Nébula
-      <div style="font-size:12px;opacity:.7;margin-top:4px">
-        Eu vou cuidar dela
-      </div>
-    </button>
-    <button data-modo="cidade" style="font-size:18px;padding:16px">
-      🏙️ É a Cidade
-      <div style="font-size:12px;opacity:.7;margin-top:4px">
-        Vai mostrar várias Nebos
-      </div>
-    </button>
-  `;
-  P.classList.add('on');
-
-  setTimeout(() => {
-    P.querySelectorAll('[data-modo]').forEach(b => {
-      b.onclick = () => {
-        S.modo = b.dataset.modo;
-        save();
-        P.classList.remove('on');
-        iniciarModo();
-      };
-    });
-  }, 100);
-}
-
-function modoPanel() {
-  P.innerHTML = `
     <h3>O que você quer explorar?</h3>
     <p style="opacity:.7;font-size:14px;margin:8px 0 16px;line-height:1.5">
       Cuide da sua Nebo ou visite a cidade compartilhada.
@@ -2307,12 +2274,11 @@ function modoPanel() {
       </div>
     </button>
     <button data-modo="cidade" style="font-size:18px;padding:16px">
-      🏙️ Explorar a Cidade
-      <div style="font-size:12px;opacity:.7;margin-top:4px">
-        Explorar as casas compartilhadas
-      </div>
-    </button>
-  `;
+  🏙️ Cidade
+  <div style="font-size:12px;opacity:.7;margin-top:4px">
+    Explorar as casas compartilhadas
+  </div>
+</button>
 
   P.classList.add('on');
 
