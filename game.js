@@ -2261,38 +2261,6 @@ function panel(h) {
 }
 
 /* ============ ESCOLHA DE MODO ============ */
-function modoPanel() {
-  P.innerHTML = `
-    <h3>O que você quer explorar?</h3>
-    <p style="opacity:.7;font-size:14px;margin:8px 0 16px;line-height:1.5">
-      Cuide da sua Nebo ou visite a cidade compartilhada.
-    </p>
-    <button data-modo="nebo" style="font-size:18px;padding:16px">
-      💗 Minha Nebo
-      <div style="font-size:12px;opacity:.7;margin-top:4px">
-        Cuidar, conversar e brincar
-      </div>
-    </button>
-    <button data-modo="cidade" style="font-size:18px;padding:16px">
-  🏙️ Cidade
-  <div style="font-size:12px;opacity:.7;margin-top:4px">
-    Explorar as casas compartilhadas
-  </div>
-</button>
-
-  P.classList.add('on');
-
-  setTimeout(() => {
-    P.querySelectorAll('[data-modo]').forEach(botao => {
-      botao.onclick = () => {
-        S.modo = botao.dataset.modo;
-        save();
-        P.classList.remove('on');
-        iniciarModo();
-      };
-    });
-  }, 100);
-}
 
 window.voltarParaEscolhaDeModo = function () {
   S.modo = null;
@@ -2305,25 +2273,37 @@ function iniciarModo() {
   const cidade = document.getElementById('cidade3d');
 
   if (S.modo === 'cidade') {
-    // Esconde o painel da Nébula e suas telas.
     if (P) P.classList.remove('on');
 
-    document.body.classList.add('modo-cidade');
-
-    // Abre somente a cidade.
+    // NÃO esconde a UI aqui. Quem esconde é a própria cidade3d,
+    // depois que ela realmente abrir. Assim, se algo falhar,
+    // a tela nunca fica em branco.
     if (typeof window.abrirCidade3D === 'function') {
       window.abrirCidade3D();
+    } else {
+      // cidade3d.js ainda não carregou. Tenta por 5 segundos.
+      let tentativas = 0;
+      const intervalo = setInterval(() => {
+        tentativas++;
+        if (typeof window.abrirCidade3D === 'function') {
+          clearInterval(intervalo);
+          window.abrirCidade3D();
+        } else if (tentativas > 50) {
+          // Desistiu: volta pra escolha de modo em vez de travar
+          clearInterval(intervalo);
+          S.modo = null;
+          save();
+          modoPanel();
+        }
+      }, 100);
     }
-
     return;
   }
 
-  // Modo Nébula: a cidade fica fechada.
+  // ===== Modo Nébula =====
   document.body.classList.remove('modo-cidade');
-
   if (cidade) cidade.hidden = true;
 
-  // Só o modo Nébula solicita nome e personalidade.
   if (!S.nome) {
     setTimeout(welcomePanel, 400);
   } else if (!S.pers) {
@@ -3246,11 +3226,10 @@ function rodarMinigameForno(id) {
   if (!r) return;
 
   const barra = document.getElementById('forno-barra-preenche');
-  const zona = document.getElementById('forno-zona-boa');
-  const btn = document.getElementById('btnTirarForno');
-  if (!barra || !btn) return;
+  const zona  = document.getElementById('forno-zona-boa');
+  const btn   = document.getElementById('btnTirarForno');
+  if (!barra || !zona || !btn) return;   // ← agora checa o zona também
 
-  // Define a zona boa (60% a 85% da barra)
   const ZONA_INICIO = 60;
   const ZONA_FIM = 85;
   zona.style.left = ZONA_INICIO + '%';
