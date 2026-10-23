@@ -2268,7 +2268,41 @@ window.voltarParaEscolhaDeModo = function () {
   if (P) P.classList.remove('on');
   modoPanel();
 };
+/* ============ PAINEL DE ESCOLHA DE MODO ============ */
+function modoPanel() {
+  P.innerHTML = `
+    <h3>O que você quer explorar?</h3>
+    <p style="opacity:.7;font-size:14px;margin:8px 0 16px;line-height:1.5">
+      Cuide da sua Nebo ou visite a cidade compartilhada.
+    </p>
+    <button data-modo="nebo" style="font-size:18px;padding:16px">
+      💗 Minha Nebo
+      <div style="font-size:12px;opacity:.7;margin-top:4px">
+        Cuidar, conversar e brincar
+      </div>
+    </button>
+    <button data-modo="cidade" style="font-size:18px;padding:16px">
+      🏙️ Cidade
+      <div style="font-size:12px;opacity:.7;margin-top:4px">
+        Explorar as casas compartilhadas
+      </div>
+    </button>
+  `;
+  P.classList.add('on');
 
+  // Pequeno delay para garantir que o innerHTML foi aplicado
+  setTimeout(() => {
+    P.querySelectorAll('[data-modo]').forEach(botao => {
+      botao.onclick = () => {
+        const modo = botao.dataset.modo;
+        S.modo = modo;
+        save();
+        P.classList.remove('on');
+        iniciarModo();
+      };
+    });
+  }, 50);
+}
 function iniciarModo() {
   const cidade = document.getElementById('cidade3d');
 
