@@ -306,9 +306,15 @@
     raioAtual = Math.max(1,raio);
     const extent = (raioAtual+1.2)*BLOCO;
 
+// A névoa acompanha o tamanho da cidade
+if (scene.fog) {
+  scene.fog.near = Math.max(180, extent * 1.25);
+  scene.fog.far = Math.max(800, extent * 5);
+}
+     
     const chao = new THREE.Mesh(
       new THREE.PlaneGeometry(extent*2+55,extent*2+55),
-      mat('#B1C58B')
+     mat('#AAB591')
     );
     chao.rotation.x = -Math.PI/2;
     chao.position.y = -0.12;
@@ -418,9 +424,8 @@
 
     iniciado = true;
     scene = new THREE.Scene();
-    scene.background = new THREE.Color('#B1C58B');
-    scene.fog = new THREE.Fog('#B1C58B',125,330);
-
+    scene.background = new THREE.Color('#C5C5BC');
+   scene.fog = new THREE.Fog('#C5C5BC',180,800);
     camera = new THREE.PerspectiveCamera(39,1,0.1,1200);
     renderer = new THREE.WebGLRenderer({antialias:true,alpha:false});
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1,1.5));
@@ -428,7 +433,7 @@
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
     if (THREE.ACESFilmicToneMapping) renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.10;
+   renderer.toneMappingExposure = 1.00;
 
     if ('outputColorSpace' in renderer && THREE.SRGBColorSpace) {
       renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -446,7 +451,7 @@
     controls.target.set(0,0.6,0);
 
     // Sol baixo e lateral para sombras longas como na primeira referência.
-    scene.add(new THREE.HemisphereLight('#FFF1D0','#586947',0.50));
+    scene.add(new THREE.HemisphereLight('#FFF1D0','#68665B',0.42));
 
     luzSol = new THREE.DirectionalLight('#FFE0A1',2.45);
     luzSol.position.set(42,34,36);
