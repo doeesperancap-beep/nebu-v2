@@ -23,27 +23,37 @@ function iniciarFirebase() {
 }
 
 // ==================== SALVAR ====================
-async function salvarNoFirebase() {
+  async function salvarNoFirebase() {
   const db = iniciarFirebase();
-  if (!db || !S.id) return;
+  if (!db || !S.id || S.modo !== 'nebo' || !S.nome || !S.pers) return;
+
   try {
-    await db.collection('nebulas').doc(S.id).set({
+    const ref = db.collection('nebulas').doc(S.id);
+    const anterior = await ref.get();
+    const dadosAntigos = anterior.exists ? (anterior.data() || {}) : {};
+    const criadaEm = Number(
+      dadosAntigos.criadaEm || dadosAntigos.atualizadoEm || Date.now()
+    );
+
+    await ref.set({
       id: S.id,
-      nome: String(S.nome || 'Nebo').slice(0, 12),
+      nome: String(S.nome || 'Nebo').slice(0, 22),
       humor: Math.round(S.humor),
       fome: Math.round(S.fome),
       energia: Math.round(S.energia),
       saude: Math.round(S.saude),
       moedas: S.moedas || 0,
       pers: S.pers || null,
+      modo: 'nebo',
+      tipoRegistro: 'casa',
       conectado: !!S.conectado,
+      criadaEm,
       atualizadoEm: Date.now()
-    });
+    }, { merge: true });
   } catch (e) {
-    console.error('Erro ao salvar:', e);
+    console.error('Erro ao salvar a casa da Nebo:', e);
   }
 }
-
 // ==================== LER (só quem está conectada e ativa) ====================
 async function lerNebulas() {
   const db = iniciarFirebase();
@@ -67,18 +77,24 @@ async function lerNebulas() {
 async function sairDoFirebase() {
   const db = iniciarFirebase();
   if (!db || !S.id) return;
+
   try {
-    await db.collection('nebulas').doc(S.id).delete();
+    // Sair da sala online não apaga a casa permanente.
+    await db.collection('nebulas').doc(S.id).set({
+      conectado: false,
+      atualizadoEm: Date.now()
+    }, { merge: true });
   } catch (e) {
-    console.error('Erro ao sair:', e);
+    console.error('Erro ao atualizar presença:', e);
   }
 }
 
 // Batimento: só enquanto estiver conectada na sala
 setInterval(() => {
-  if (S.id && S.modo === 'nebo' && S.conectado) salvarNoFirebase();
+  if (S.id && S.modo === 'nebo' && S.nome && S.pers) {
+    salvarNoFirebase();
+  }
 }, 30000);
-
 /* ============ RECORDE GLOBAL DO DINO ============ */
 async function lerRecordeDino() {
   const db = iniciarFirebase();
@@ -2278,6 +2294,47 @@ function modoPanel() {
   }, 100);
 }
 
+function modoPanel() {
+  P.innerHTML = `
+    <h3>O que você quer explorar?</h3>
+    <p style="opacity:.7;font-size:14px;margin:8px 0 16px;line-height:1.5">
+      Cuide da sua Nebo ou visite a cidade compartilhada.
+    </p>
+    <button data-modo="nebo" style="font-size:18px;padding:16px">
+      💗 Minha Nebo
+      <div style="font-size:12px;opacity:.7;margin-top:4px">
+        Cuidar, conversar e brincar
+      </div>
+    </button>
+    <button data-modo="cidade" style="font-size:18px;padding:16px">
+      🏙️ Explorar a Cidade
+      <div style="font-size:12px;opacity:.7;margin-top:4px">
+        Explorar as casas compartilhadas
+      </div>
+    </button>
+  `;
+
+  P.classList.add('on');
+
+  setTimeout(() => {
+    P.querySelectorAll('[data-modo]').forEach(botao => {
+      botao.onclick = () => {
+        S.modo = botao.dataset.modo;
+        save();
+        P.classList.remove('on');
+        iniciarModo();
+      };
+    });
+  }, 100);
+}
+
+window.voltarParaEscolhaDeModo = function () {
+  S.modo = null;
+  save();
+  if (P) P.classList.remove('on');
+  modoPanel();
+};
+
 function iniciarModo() {
   const cidade = document.getElementById('cidade3d');
 
@@ -4350,9 +4407,10 @@ function choose(k) {
   S.favoritas = p.favoritas;
   S.detestadas = p.detestadas;
   
-  P.classList.remove('on');
+    P.classList.remove('on');
   say('Eu sou ' + k + '! ✨');
   save();
+  salvarNoFirebase();
   
   // Mostra as preferências (fofo!)
   setTimeout(() => {
