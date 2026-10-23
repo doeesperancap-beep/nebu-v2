@@ -183,8 +183,18 @@ function falarComCallback(texto, callback) {
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(limpo);
   u.lang = 'pt-BR';
-  u.rate = 0.95;
-  u.pitch = S.pers === 'temperamental' ? 1.1 : 1.0;
+    const VOZ_PERS = {
+    carinhosa:     { rate: 0.95, pitch: 1.15 },
+    curiosa:       { rate: 1.05, pitch: 1.2 },
+    tranquila:     { rate: 0.85, pitch: 0.95 },
+    brincalhona:   { rate: 1.1,  pitch: 1.25 },
+    temperamental: { rate: 1.0,  pitch: 1.1 },
+    reservada:     { rate: 0.9,  pitch: 0.9 }
+  };
+  const vp = VOZ_PERS[S.pers] || { rate: 0.95, pitch: 1.0 };
+  u.rate = vp.rate;
+  u.pitch = vp.pitch;
+   
 
   const vozes = speechSynthesis.getVoices();
   const vozPT = vozes.find(v => v.lang.includes('pt-BR') && v.name.includes('Google')) ||
