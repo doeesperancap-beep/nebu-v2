@@ -3779,10 +3779,10 @@ function lerLivro(livroId) {
   // ---------- PRIMEIRA VEZ LENDO ----------
   const gostou = Math.random() * 100 < BIB_CONFIG.chanceGostar;
   S.livrosLidos[livroId] = {
-    gostou: gostou,
-    ultimaLeitura: agora
-      registrarEvento('leu "' + L.nome + '" e ' + (gostou ? 'gostou' : 'não gostou'));
-  };
+  gostou: gostou,
+  ultimaLeitura: agora
+};
+registrarEvento('leu "' + L.nome + '" e ' + (gostou ? 'gostou' : 'não gostou'));
 
   // Animação de leitura (olhinhos se movem devagar)
   set('curious', 3500, '📖 ...');
@@ -3805,7 +3805,7 @@ function lerLivro(livroId) {
     SOM.melodia([N.DO_BAIXO, N.DO_BAIXO], 0.15, 'sawtooth', 0.1);
 
     setTimeout(() => {
-      say(falaDe('leu_nao', rnd(BIB_CONFIG.falaNaoGostou)), 3500)
+      say(falaDe('leu_nao', rnd(BIB_CONFIG.falaNaoGostou)), 3500);
       set('sad', 3000);
     }, 3600);
   }
