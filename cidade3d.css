@@ -1,26 +1,28 @@
-/* CIDADE NEBO — painel escuro sobre cenário 3D */
+/* CIDADE NEBO v2: painéis claros sobre o diorama 3D
+   Paleta: verde-menta (vidro), verde-floresta (texto), amarelo-sol (ação) */
 
 #cidade3d {
+  --c3-vidro: #f3faeef0;
+  --c3-borda: #2f5d4a26;
+  --c3-texto: #23402f;
+  --c3-suave: #54705f;
+  --c3-sol: #f6b94a;
+  --c3-sol-forte: #ffc95e;
+
   position: fixed;
   inset: 0;
   z-index: 9998;
   display: block;
   overflow: hidden;
-  color: #fff5df;
- background: #C5C5BC;
+  color: var(--c3-texto);
+  background: #dceee2;
   font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   isolation: isolate;
 }
 
-#cidade3d[hidden] {
-  display: none !important;
-}
+#cidade3d[hidden] { display: none !important; }
 
-#cidade3d #c3canvas {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-}
+#cidade3d #c3canvas { position: absolute; inset: 0; z-index: 0; }
 
 #cidade3d canvas {
   display: block;
@@ -43,9 +45,7 @@
   pointer-events: none;
 }
 
-#cidade3d .c3-top > * {
-  pointer-events: auto;
-}
+#cidade3d .c3-top > * { pointer-events: auto; }
 
 #cidade3d .c3-title {
   display: flex;
@@ -54,11 +54,11 @@
   min-width: 170px;
   max-width: min(330px, 62vw);
   padding: 14px 17px;
-  border: 1px solid #fff3d92e;
+  border: 1px solid var(--c3-borda);
   border-radius: 20px;
-  color: #fff3df;
-  background: linear-gradient(145deg, #292333ed, #3d3146e8);
-  box-shadow: 0 10px 28px #24301d35, inset 0 1px #ffffff14;
+  color: var(--c3-texto);
+  background: var(--c3-vidro);
+  box-shadow: 0 10px 28px #2f5d4a2e;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
@@ -72,59 +72,43 @@
 
 #cidade3d .c3-eyebrow,
 #cidade3d .c3-info-eyebrow {
-  color: #d9c4f7;
-  font-size: 9px;
-  letter-spacing: .16em;
-  font-weight: 850;
+  color: var(--c3-suave);
+  font-size: 11px;
+  font-weight: 650;
 }
 
 #cidade3d #c3count {
-  font-size: 12px;
-  color: #fff2d9;
-  font-weight: 750;
   margin-top: 5px;
+  font-size: 12px;
+  font-weight: 750;
+  color: var(--c3-texto);
 }
 
 #cidade3d #c3status {
   font-size: 11px;
-  color: #d4d0d7;
   line-height: 1.35;
+  color: var(--c3-suave);
 }
 
-#cidade3d .c3-actions {
-  display: flex;
-  gap: 8px;
-}
+#cidade3d .c3-actions { display: flex; gap: 8px; }
 
 #cidade3d button {
-  border: 1px solid #ffffff2b;
+  border: 1px solid #b9801f55;
   border-radius: 15px;
   padding: 11px 15px;
-  color: #fff5e5;
-  background: #30283bdd;
-  box-shadow: 0 7px 19px #26301d30, inset 0 1px #ffffff12;
+  color: #3a2a12;
+  background: var(--c3-sol);
+  box-shadow: 0 6px 16px #b9801f33;
   font: inherit;
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   transition: transform .16s ease, background .16s ease;
 }
 
-#cidade3d button:hover {
-  background: #4b3a55f0;
-  transform: translateY(-1px);
-}
-
-#cidade3d button:active {
-  transform: scale(.98);
-}
-
-#cidade3d button:focus-visible {
-  outline: 3px solid #e5cfad;
-  outline-offset: 3px;
-}
+#cidade3d button:hover { background: var(--c3-sol-forte); transform: translateY(-1px); }
+#cidade3d button:active { transform: scale(.98); }
+#cidade3d button:focus-visible { outline: 3px solid #23402f; outline-offset: 3px; }
 
 #cidade3d .c3-help {
   position: absolute;
@@ -136,16 +120,16 @@
   width: max-content;
   max-width: calc(100vw - 28px);
   padding: 11px 16px;
-  border: 1px solid #ffffff26;
+  border: 1px solid var(--c3-borda);
   border-radius: 15px;
-  color: #f8edda;
-  background: #30283bdc;
-  box-shadow: 0 8px 24px #26301d30;
+  color: var(--c3-texto);
+  background: var(--c3-vidro);
+  box-shadow: 0 8px 24px #2f5d4a26;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   text-align: center;
-  font-size: 11px;
-  font-weight: 650;
+  font-size: 12px;
+  font-weight: 600;
   line-height: 1.4;
 }
 
@@ -159,33 +143,29 @@
   min-width: 220px;
   max-width: min(350px, calc(100vw - 36px));
   padding: 22px 42px 20px 20px;
-  border: 1px solid #fff3d92e;
+  border: 1px solid var(--c3-borda);
   border-radius: 21px;
-  color: #fff4df;
-  background: linear-gradient(145deg, #292333f5, #3d3146f2);
-  box-shadow: 0 20px 60px #1f281d65;
+  color: var(--c3-texto);
+  background: #f8fdf4f7;
+  box-shadow: 0 20px 60px #2f5d4a40;
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 
-#cidade3d #c3info[hidden] {
-  display: none !important;
-}
+#cidade3d #c3info[hidden] { display: none !important; }
 
 #cidade3d #c3info strong,
-#cidade3d #c3info > span:not(.c3-info-eyebrow) {
-  display: block;
-}
+#cidade3d #c3info > span:not(.c3-info-eyebrow) { display: block; }
 
 #cidade3d #c3info strong {
-  margin: 8px 0 5px;
+  margin: 6px 0 5px;
   font-size: 20px;
   letter-spacing: -.025em;
 }
 
 #cidade3d #c3info > span:not(.c3-info-eyebrow) {
-  color: #d7cfda;
-  font-size: 12px;
+  color: var(--c3-suave);
+  font-size: 13px;
 }
 
 #cidade3d #c3infoclose {
@@ -201,7 +181,7 @@
 
 body.modo-cidade {
   overflow: hidden !important;
-  background: #C5C5BC !important;
+  background: #dceee2 !important;
 }
 
 body.modo-cidade #screen,
@@ -220,48 +200,14 @@ body.modo-cidade #bib-menu {
 }
 
 @media (max-width: 600px) {
-  #cidade3d .c3-top {
-    left: 10px;
-    right: 10px;
-    top: max(10px, env(safe-area-inset-top));
-    gap: 7px;
-  }
-
-  #cidade3d .c3-title {
-    min-width: 0;
-    max-width: 55vw;
-    padding: 11px 12px;
-    border-radius: 16px;
-  }
-
-  #cidade3d .c3-title strong {
-    font-size: 18px;
-  }
-
-  #cidade3d .c3-eyebrow {
-    font-size: 7px;
-  }
-
-  #cidade3d .c3-actions {
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  #cidade3d button {
-    padding: 10px 12px;
-    border-radius: 13px;
-    font-size: 11px;
-  }
-
-  #cidade3d .c3-help {
-    bottom: max(10px, env(safe-area-inset-bottom));
-    font-size: 10px;
-    padding: 9px 11px;
-  }
+  #cidade3d .c3-top { left: 10px; right: 10px; top: max(10px, env(safe-area-inset-top)); gap: 7px; }
+  #cidade3d .c3-title { min-width: 0; max-width: 55vw; padding: 11px 12px; border-radius: 16px; }
+  #cidade3d .c3-title strong { font-size: 18px; }
+  #cidade3d .c3-actions { flex-direction: column; gap: 6px; }
+  #cidade3d button { padding: 10px 12px; border-radius: 13px; font-size: 11px; }
+  #cidade3d .c3-help { bottom: max(10px, env(safe-area-inset-bottom)); font-size: 11px; padding: 9px 11px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #cidade3d button {
-    transition: none;
-  }
+  #cidade3d button { transition: none; }
 }
