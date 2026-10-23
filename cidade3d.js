@@ -290,6 +290,144 @@
     casasRenderizadas = [];
   }
 
+
+function criarTerrenoRelevo(extent) {
+  // Terreno plano no centro e montanhas ao redor.
+  const margem = Math.max(900, extent * 3.8);
+  const lado = (extent + margem) * 2;
+  const segmentos = Math.min(
+    132,
+    Math.max(84, Math.ceil(lado / 18))
+  );
+
+  const geometria = new THREE.PlaneGeometry(
+    lado, lado, segmentos, segmentos
+  ).toNonIndexed();
+
+  const pos = geometria.attributes.position;
+
+  const larguraTransicao = Math.max(210, extent * 0.48);
+  const deslocamento = Math.max(175, extent * 0.22);
+  const raioMorro = Math.max(145, extent * 0.24);
+  const escalaAltura = Math.max(1, extent / 330);
+
+  // Picos distribuídos ao redor da cidade.
+  const picos = [
+    [ extent + deslocamento, -extent * 0.14, 52],
+    [-extent - deslocamento,  extent * 0.10, 60],
+    [ extent * 0.12, extent + deslocamento, 48],
+    [-extent * 0.10, -extent - deslocamento, 54],
+    [ extent + deslocamento * 1.30,
+      extent + deslocamento * 1.16, 38],
+    [-extent - deslocamento * 1.24,
+     -extent - deslocamento * 1.12, 32]
+  ];
+
+  // Criar a altura de cada ponto do terreno.
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+    const z = -pos.getY(i);
+    const borda = Math.max(Math.abs(x), Math.abs(z));
+
+    let t = (borda - (extent + 12)) / larguraTransicao;
+    t = Math.max(0, Math.min(1, t));
+
+    // Faz a elevação começar suavemente.
+    const suave = t * t * (3 - 2 * t);
+
+    const ondas =
+      Math.sin(x * 0.013 + Math.sin(z * 0.009) * 1.7) * 0.50 +
+      Math.cos(z * 0.019 - x * 0.011) * 0.32 +
+      Math.sin((x + z) * 0.033) * 0.18;
+
+    let morros = 0;
+
+    for (const [hx, hz, altura] of picos) {
+      const dx = x - hx;
+      const dz = z - hz;
+      const distancia = Math.sqrt(dx * dx + dz * dz);
+      const influencia = Math.max(
+        0, 1 - distancia / (raioMorro * 1.55)
+      );
+
+      morros += altura * influencia * influencia * escalaAltura;
+    }
+
+    pos.setZ(i, suave * (4 + ondas * 13 + morros));
+  }
+
+  // Paleta facetada de grama, musgo e pedra.
+  const verdes = [
+    '#9DC778', '#A8C97E', '#B6D18B',
+    '#8DB56A', '#C1D791', '#83AB61'
+  ];
+
+  const pedras = [
+    '#A9A995', '#C0B9A1', '#909985', '#B3AC96'
+  ];
+
+  const cores = new Float32Array(pos.count * 3);
+
+  // Cada triângulo recebe uma variação sutil de cor.
+  for (let i = 0; i < pos.count; i += 3) {
+    const cx = (
+      pos.getX(i) + pos.getX(i + 1) + pos.getX(i + 2)
+    ) / 3;
+
+    const cz = -(
+      pos.getY(i) + pos.getY(i + 1) + pos.getY(i + 2)
+    ) / 3;
+
+    const alturaMedia = (
+      pos.getZ(i) + pos.getZ(i + 1) + pos.getZ(i + 2)
+    ) / 3;
+
+    const sorteio = Math.abs(
+      Math.sin(cx * 12.9898 + cz * 78.233) * 43758.5453
+    ) % 1;
+
+    const paleta =
+      alturaMedia > 20 && sorteio > 0.48 ? pedras : verdes;
+
+    const cor = new THREE.Color(
+      paleta[Math.floor(sorteio * paleta.length) % paleta.length]
+    );
+
+    for (let j = 0; j < 3; j++) {
+      const k = (i + j) * 3;
+      cores[k] = cor.r;
+      cores[k + 1] = cor.g;
+      cores[k + 2] = cor.b;
+    }
+  }
+
+  geometria.setAttribute(
+    'color',
+    new THREE.BufferAttribute(cores, 3)
+  );
+
+  geometria.computeVertexNormals();
+  geometria.computeBoundingSphere();
+
+  const terreno = new THREE.Mesh(
+    geometria,
+    new THREE.MeshStandardMaterial({
+      vertexColors: true,
+      flatShading: true,
+      roughness: 1,
+      metalness: 0
+    })
+  );
+
+  terreno.rotation.x = -Math.PI / 2;
+  terreno.position.y = -0.12;
+  terreno.receiveShadow = true;
+  terreno.castShadow = false;
+
+  return terreno;
+}
+
+   
   function construirCidade(lista,recentralizar=false) {
     if (!scene || !grupoCidade) return;
 
@@ -312,10 +450,10 @@ if (scene.fog) {
   scene.fog.far = Math.max(800, extent * 5);
 }
      
-    const chao = new THREE.Mesh(
-      new THREE.PlaneGeometry(extent*2+55,extent*2+55),
-     mat('#AAB591')
-    );
+    
+    const chao = criarTerrenoRelevo(extent);
+    grupoCidade.add(chao);
+
     chao.rotation.x = -Math.PI/2;
     chao.position.y = -0.12;
     chao.receiveShadow = true;
