@@ -1149,6 +1149,9 @@ function eat(f) {
 
   if (!fav && !det && c.saude >= 2) sufixo = ' ✨';
 
+    if (fav) { fala = falaDe('comeu_fav', fala); sufixo = ''; }
+  else if (det) { fala = falaDe('comeu_det', fala); sufixo = ''; }
+  registrarEvento('comeu ' + emoji + (fav ? ' (favorita)' : det ? ' (detestada, fez cara feia)' : '') + (c.ehCaseiro ? ', feita em casa' : ''));
   set(expressao, 2500, fala + sufixo);
   SOM.melodia([N.MI, N.SOL], 0.1, 'triangle', 0.1);
 
@@ -1871,7 +1874,8 @@ function comecarBanho(sabKey) {
           S.humor = clamp(S.humor + 8);
         S.saude = clamp(S.saude + 3);
         S.limpeza = clamp(S.limpeza + 100);   // limpa de vez!
-        say('Limpinha com cheirinho de ' + sab.nome.toLowerCase() + '! ✨');
+       say(falaDe('banho', 'Limpinha com cheirinho de ' + sab.nome.toLowerCase() + '! ✨'));
+        registrarEvento('tomou banho com sabonete de ' + sab.nome.toLowerCase());
         ganharMoedas(5);
         startDance(6);
         setTimeout(() => set('carinho', 2500, '🥰'), 6200);
@@ -2150,12 +2154,18 @@ function startDance(sec = 10) {
 }
 
 function joyTick() {
-  // O código antigo de dançar quando está feliz...
   if (S.humor >= 99 && mood === 'neutral' && !gOn && Math.random() < .01) startDance(5);
-  
-  // 🧠 NOVO: Pensamentos próprios (como o Aibi)
-  // Chance de 3% a cada 5 segundos de ter um pensamento (se ela não estiver ocupada)
+
   if (!gOn && !S.conectado && Math.random() < 0.03) {
+    // Tenta um pensamento da IA (no máximo 1 a cada 25 min)
+    if (typeof pensamentoPodeIA === 'function' && S.pers && pensamentoPodeIA()) {
+      pensamentoEspontaneo().then(r => {
+        if (r && !gOn && !processando) aplicarResposta(r);
+      });
+      return;
+    }
+
+    // Se a IA estiver em cooldown, usa os pensamentos fixos
     const pensamentos = [
       { texto: 'Será que as estrelas sentem frio? 🌌', exp: 'curious' },
       { texto: 'Eu queria comer um doce agora... 🍰', exp: 'sad' },
@@ -2163,8 +2173,6 @@ function joyTick() {
       { texto: 'Acho que ouvi um barulho! 👀', exp: 'surprised' },
       { texto: 'Cada vez que você respira, nasce uma estrela. ✨', exp: 'carinho' }
     ];
-    
-    // Escolhe um pensamento aleatório
     const p = rnd(pensamentos);
     set(p.exp, 5000, p.texto);
   }
@@ -3277,6 +3285,7 @@ function finalizarDoce(id, resultado) {
     if (!S.estoque) S.estoque = {};
     const chaveCaseiro = 'caseiro_' + r.emoji;
     S.estoque[chaveCaseiro] = (S.estoque[chaveCaseiro] || 0) + 1;
+   registrarEvento('fez ' + r.nome + ' perfeito na doceria');
     save();
 
     docMostrarConteudo(`
@@ -3772,6 +3781,7 @@ function lerLivro(livroId) {
   S.livrosLidos[livroId] = {
     gostou: gostou,
     ultimaLeitura: agora
+      registrarEvento('leu "' + L.nome + '" e ' + (gostou ? 'gostou' : 'não gostou'));
   };
 
   // Animação de leitura (olhinhos se movem devagar)
@@ -3786,7 +3796,7 @@ function lerLivro(livroId) {
 
     // Fala depois de um tempo (ela "leu")
     setTimeout(() => {
-      say(rnd(BIB_CONFIG.falaGostou), 3500);
+      say(falaDe('leu_gostou', rnd(BIB_CONFIG.falaGostou)), 3500);
       set('carinho', 3000);
       setTimeout(() => heart(innerWidth / 2, innerHeight / 2), 200);
     }, 3600);
@@ -3795,7 +3805,7 @@ function lerLivro(livroId) {
     SOM.melodia([N.DO_BAIXO, N.DO_BAIXO], 0.15, 'sawtooth', 0.1);
 
     setTimeout(() => {
-      say(rnd(BIB_CONFIG.falaNaoGostou), 3500);
+      say(falaDe('leu_nao', rnd(BIB_CONFIG.falaNaoGostou)), 3500)
       set('sad', 3000);
     }, 3600);
   }
@@ -4568,6 +4578,7 @@ function iniciarCronometro(minutos) {
     S.humor = clamp(S.humor + 15);
     S.energia = clamp(S.energia + 10);
     ganharMoedas(20);
+    registrarEvento('estudou com o usuário e terminou o foco');
     save();
     SOM.melodia([N.DO, N.MI, N.SOL, N.DO2], 0.15, 'sine', 0.15);
     until = 0;
@@ -4602,6 +4613,7 @@ async function checarClima() {
 
       // Códigos de chuva: 51 a 67, 80 a 82, 95 a 99
       const taChovendo = (codigoClima >= 51 && codigoClima <= 67) || (codigoClima >= 80 && codigoClima <= 82) || (codigoClima >= 95);
+    S.climaAtual = taChovendo ? 'chovendo' : temp > 30 ? 'muito calor' : temp < 15 ? 'frio' : 'tempo agradável';
       
       if (taChovendo) {
         set('sad', 6000, 'Tá chovendo lá fora... que preguiça de estudar. ☔');
