@@ -211,3 +211,59 @@ body.modo-cidade #bib-menu {
 @media (prefers-reduced-motion: reduce) {
   #cidade3d button { transition: none; }
 }
+
+/* Avisos discretos dos encontros com a fauna marinha. */
+#cidade3d .c3-sighting {
+  position: absolute;
+  z-index: 6;
+  top: clamp(88px, 13vh, 126px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(460px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 11px 16px;
+  border: 1px solid #2f5d4a30;
+  border-radius: 16px;
+  color: #23402f;
+  background: #f3faeef5;
+  box-shadow: 0 9px 26px #23402f26;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-size: 13px;
+  line-height: 1.4;
+  font-weight: 750;
+  text-align: center;
+  pointer-events: none;
+  animation: c3SightingIn .25s ease-out;
+}
+
+#cidade3 .c3-sighting[hidden] {
+  display: none !important;
+}
+
+@keyframes c3SightingIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -7px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+@media (max-width: 600px) {
+  #cidade3 .c3-sighting {
+    top: 116px;
+    font-size: 12px;
+    padding: 9px 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #cidade3 .c3-sighting {
+    animation: none;
+  }
+}
