@@ -844,3 +844,22 @@
     SOM.ligar(config.som);
   }
 })();
+
+
+/* Evita que gestos nas configurações ativem carinho na Nébula */
+(() => {
+  const painel = document.getElementById('cfg-overlay');
+  if (!painel) return;
+
+  const bloquearGesto = (evento) => {
+    evento.stopPropagation();
+  };
+
+  ['pointerdown', 'pointermove', 'pointerup',
+   'touchstart', 'touchmove', 'touchend',
+   'mousedown', 'mousemove', 'mouseup'].forEach(tipo => {
+    painel.addEventListener(tipo, bloquearGesto, {
+      passive: true
+    });
+  });
+})();
