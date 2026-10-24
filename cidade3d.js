@@ -67,6 +67,12 @@ let aguaMar = null;
 let ondasEspuma = [];
 let praiaAtual = null;
 
+let grupoFaunaMarinha = null;
+let aparicaoFaunaMarinha = null;
+let proximaAparicaoFauna = 0;
+let ultimaEspecieVista = '';
+let avisoFaunaTimer = null;
+
   const $ = id => document.getElementById(id);
   const ehCelular = () => Math.min(window.innerWidth, window.innerHeight) < 700;
 
@@ -968,6 +974,477 @@ function construirMar(praia) {
     ondasEspuma.push({ malha, x, fase, deslocamento });
   }
 }
+
+/* ============================================================
+   FAUNA MARINHA — aparições e comportamentos
+   ============================================================ */
+
+function pecaFauna(parent, geometria, cor, x, y, z, sx, sy, sz, rz = 0) {
+  const mesh = new THREE.Mesh(
+    geometria,
+    mat(cor, { roughness: 0.88, metalness: 0, flatShading: true })
+  );
+
+  mesh.position.set(x, y, z);
+  mesh.scale.set(sx, sy, sz);
+  mesh.rotation.z = rz;
+  mesh.castShadow = false;
+  mesh.receiveShadow = false;
+  parent.add(mesh);
+
+  return mesh;
+}
+
+function corpoFauna(parent, cor, x, y, z, sx, sy, sz, detalhe = 0) {
+  return pecaFauna(
+    parent,
+    new THREE.IcosahedronGeometry(1, detalhe),
+    cor, x, y, z, sx, sy, sz
+  );
+}
+
+/* ---------------- GOLFINHO ---------------- */
+
+function criarGolfinho() {
+  const g = new THREE.Group();
+
+  corpoFauna(g, '#657F91', 0, 0, 0, 1.9, 0.67, 0.58, 1);
+  corpoFauna(g, '#E9E4D4', 0.25, -0.37, 0, 1.35, 0.22, 0.38);
+  corpoFauna(g, '#718F9D', 1.55, -0.09, 0, 0.66, 0.28, 0.34);
+
+  pecaFauna(
+    g, new THREE.ConeGeometry(0.43, 0.86, 3),
+    '#506879', -0.12, 0.65, 0, 0.72, 0.85, 0.5, -0.16
+  );
+
+  const cauda = new THREE.Group();
+  cauda.position.set(-1.72, 0.04, 0);
+
+  pecaFauna(
+    cauda, new THREE.ConeGeometry(0.38, 0.9, 3),
+    '#506879', -0.22, 0.12, -0.18,
+    0.65, 0.78, 0.4, Math.PI / 2
+  );
+
+  pecaFauna(
+    cauda, new THREE.ConeGeometry(0.38, 0.9, 3),
+    '#506879', -0.22, -0.12, 0.18,
+    0.65, 0.78, 0.4, Math.PI / 2
+  );
+
+  g.add(cauda);
+  g.userData.cauda = cauda;
+
+  [-1, 1].forEach(lado => {
+    corpoFauna(
+      g, '#192C3D', 1.04, 0.13, lado * 0.48,
+      0.10, 0.10, 0.07
+    );
+
+    corpoFauna(
+      g, '#F7F1DE', 1.08, 0.16, lado * 0.535,
+      0.035, 0.035, 0.025
+    );
+  });
+
+  return g;
+}
+
+/* ---------------- TARTARUGA ---------------- */
+
+function criarTartaruga() {
+  const g = new THREE.Group();
+
+  corpoFauna(g, '#5D9B69', 0, -0.12, 0, 1.20, 0.28, 0.78, 1);
+  corpoFauna(g, '#927650', -0.08, 0.20, 0, 1.02, 0.56, 0.75, 1);
+  corpoFauna(g, '#B8A176', -0.10, 0.49, 0, 0.76, 0.10, 0.55);
+  corpoFauna(g, '#70AE75', 1.16, 0.02, 0, 0.50, 0.28, 0.30, 1);
+
+  const patas = [];
+
+  [
+    [-0.72, -0.18, -0.64],
+    [ 0.72, -0.18, -0.64],
+    [-0.72, -0.18,  0.64],
+    [ 0.72, -0.18,  0.64]
+  ].forEach(p => {
+    patas.push(
+      corpoFauna(
+        g, '#70AE75', p[0], p[1], p[2],
+        0.46, 0.13, 0.23
+      )
+    );
+  });
+
+  [-1, 1].forEach(lado => {
+    corpoFauna(
+      g, '#172E2C', 1.32, 0.12, lado * 0.21,
+      0.07, 0.07, 0.05
+    );
+  });
+
+  g.userData.patas = patas;
+  return g;
+}
+
+/* ---------------- BALEIA ---------------- */
+
+function criarBaleia() {
+  const g = new THREE.Group();
+
+  corpoFauna(g, '#65727B', 0, 0, 0, 3.55, 1.08, 1.12, 1);
+  corpoFauna(g, '#D9D7C9', 0.36, -0.67, 0, 2.40, 0.34, 0.78, 1);
+  corpoFauna(g, '#727E84', 2.90, -0.15, 0, 0.78, 0.43, 0.65);
+
+  pecaFauna(
+    g, new THREE.ConeGeometry(0.42, 0.82, 3),
+    '#4E5C67', -0.85, 1.00, 0, 0.78, 0.72, 0.5
+  );
+
+  const cauda = new THREE.Group();
+  cauda.position.set(-3.2, 0.24, 0);
+
+  pecaFauna(
+    cauda, new THREE.ConeGeometry(0.55, 1.4, 3),
+    '#4E5C67', -0.35, 0.17, -0.30,
+    0.8, 0.75, 0.55, Math.PI / 2
+  );
+
+  pecaFauna(
+    cauda, new THREE.ConeGeometry(0.55, 1.4, 3),
+    '#4E5C67', -0.35, -0.17, 0.30,
+    0.8, 0.75, 0.55, Math.PI / 2
+  );
+
+  g.add(cauda);
+  g.userData.cauda = cauda;
+
+  const jato = new THREE.Group();
+
+  pecaFauna(
+    jato, new THREE.ConeGeometry(0.18, 0.72, 5),
+    '#C0E8E8', 0, 0.34, 0, 0.62, 1, 0.62
+  );
+
+  pecaFauna(
+    jato, new THREE.ConeGeometry(0.12, 0.42, 5),
+    '#E3F4E9', 0.22, 0.54, 0.08, 0.58, 0.88, 0.58
+  );
+
+  jato.position.set(0.50, 0.95, 0);
+  g.add(jato);
+  g.userData.jato = jato;
+
+  return g;
+}
+
+/* ---------------- PEIXES ---------------- */
+
+function criarPeixe(cor) {
+  const g = new THREE.Group();
+
+  corpoFauna(g, cor, 0, 0, 0, 0.55, 0.25, 0.28);
+  corpoFauna(g, '#EDE5D0', 0.08, -0.09, 0, 0.28, 0.065, 0.18);
+
+  const cauda = new THREE.Group();
+  cauda.position.x = -0.46;
+
+  pecaFauna(
+    cauda, new THREE.ConeGeometry(0.27, 0.58, 3),
+    cor, -0.18, 0, 0, 0.7, 0.7, 0.62, Math.PI / 2
+  );
+
+  g.add(cauda);
+  g.userData.cauda = cauda;
+
+  corpoFauna(g, '#192B35', 0.32, 0.07, 0.21, 0.05, 0.05, 0.03);
+
+  return g;
+}
+
+/* ---------------- GRUPOS DE ANIMAIS ---------------- */
+
+function criarGrupoDaEspecie(tipo) {
+  const grupo = new THREE.Group();
+  const animais = [];
+
+  if (tipo === 'cardume') {
+    const cores = [
+      '#E58A58', '#8CABC0', '#E7C36B',
+      '#698E9B', '#D5A1A4'
+    ];
+
+    for (let i = 0; i < 7; i++) {
+      const peixe = criarPeixe(cores[i % cores.length]);
+
+      peixe.position.set(
+        -i * 1.25 + (i % 2) * 0.45,
+        (i % 3) * 0.16,
+        (i % 2 ? 1 : -1) * (0.8 + (i % 3) * 0.4)
+      );
+
+      grupo.add(peixe);
+
+      animais.push({
+        objeto: peixe,
+        tipo: 'peixe',
+        fase: i * 0.8,
+        yBase: peixe.position.y
+      });
+    }
+  } else if (tipo === 'golfinhos') {
+    for (let i = 0; i < 3; i++) {
+      const delfim = criarGolfinho();
+
+      delfim.scale.setScalar(i === 0 ? 0.88 : 0.67);
+      delfim.position.set(-i * 4.7, -i * 0.10, (i - 1) * 2);
+
+      grupo.add(delfim);
+
+      animais.push({
+        objeto: delfim,
+        tipo: 'golfinho',
+        fase: i * 1.7,
+        yBase: delfim.position.y
+      });
+    }
+  } else if (tipo === 'tartaruga') {
+    const tartaruga = criarTartaruga();
+
+    grupo.add(tartaruga);
+
+    animais.push({
+      objeto: tartaruga,
+      tipo: 'tartaruga',
+      fase: 1.2,
+      yBase: 0
+    });
+  } else {
+    const baleia = criarBaleia();
+
+    baleia.scale.setScalar(1.15);
+    grupo.add(baleia);
+
+    animais.push({
+      objeto: baleia,
+      tipo: 'baleia',
+      fase: 2.3,
+      yBase: 0
+    });
+  }
+
+  grupo.userData.animais = animais;
+  return grupo;
+}
+
+/* ---------------- REGRAS DA CIDADE ---------------- */
+
+// O horário influencia as probabilidades.
+// A mesma espécie não é sorteada em duas aparições seguidas.
+function escolherEspecieMarinha() {
+  const hora = new Date().getHours();
+  const dia = hora >= 7 && hora < 18;
+
+  const opcoes = [
+    { tipo: 'cardume', peso: 4 },
+    { tipo: 'golfinhos', peso: dia ? 4 : 2 },
+    { tipo: 'tartaruga', peso: dia ? 2.5 : 1 },
+    { tipo: 'baleia', peso: dia ? 0.7 : 1.5 }
+  ].filter(o => o.tipo !== ultimaEspecieVista);
+
+  const total = opcoes.reduce((s, o) => s + o.peso, 0);
+  let sorteio = Math.random() * total;
+
+  for (const opcao of opcoes) {
+    sorteio -= opcao.peso;
+    if (sorteio <= 0) return opcao.tipo;
+  }
+
+  return opcoes[0].tipo;
+}
+
+function mostrarAvistamentoMarinho(texto) {
+  const aviso = $('c3sighting');
+  if (!aviso) return;
+
+  aviso.textContent = texto;
+  aviso.hidden = false;
+
+  clearTimeout(avisoFaunaTimer);
+
+  avisoFaunaTimer = setTimeout(() => {
+    aviso.hidden = true;
+  }, 4300);
+}
+
+function iniciarFaunaMarinha(praia) {
+  grupoFaunaMarinha = new THREE.Group();
+  grupoCidade.add(grupoFaunaMarinha);
+
+  aparicaoFaunaMarinha = null;
+
+  // A primeira aparição ocorre pouco depois de abrir a cidade.
+  proximaAparicaoFauna =
+    (relogio ? relogio.elapsedTime : 0) + 8 + Math.random() * 12;
+
+  praiaAtual = praia;
+}
+
+function comecarAvistamentoMarinho(tempo) {
+  if (!grupoFaunaMarinha || !praiaAtual || aparicaoFaunaMarinha) return;
+
+  const tipo = escolherEspecieMarinha();
+  const direcao = Math.random() < 0.5 ? 1 : -1;
+  const lado = praiaAtual.largura * 0.34;
+
+  const xInicio = direcao > 0 ? -lado : lado;
+  const xFim = -xInicio;
+  const centroX = (xInicio + xFim) / 2;
+
+  const distanciaCosta =
+    tipo === 'baleia' ? 54 :
+    tipo === 'tartaruga' ? 8 : 24;
+
+  const zBase = costaEm(centroX, praiaAtual) + distanciaCosta;
+  const grupo = criarGrupoDaEspecie(tipo);
+
+  grupo.position.set(
+    xInicio,
+    tipo === 'baleia' ? 0.86 :
+      tipo === 'tartaruga' ? 0.34 :
+      tipo === 'cardume' ? 0.50 : 0.72,
+    zBase
+  );
+
+  grupo.rotation.y = direcao < 0 ? Math.PI : 0;
+  grupo.scale.setScalar(0.02);
+
+  grupoFaunaMarinha.add(grupo);
+
+  const duracao =
+    tipo === 'cardume' ? 17 :
+    tipo === 'golfinhos' ? 21 :
+    tipo === 'tartaruga' ? 30 : 25;
+
+  const mensagens = {
+    cardume: '🐟 Um cardume de peixes saltou perto da praia!',
+    golfinhos: '🐬 Golfinhos apareceram brincando no mar!',
+    tartaruga: '🐢 Uma tartaruga marinha passou perto da areia!',
+    baleia: '🐋 Uma baleia surgiu ao longe na costa!'
+  };
+
+  ultimaEspecieVista = tipo;
+  mostrarAvistamentoMarinho(mensagens[tipo]);
+
+  aparicaoFaunaMarinha = {
+    grupo,
+    tipo,
+    inicio: tempo,
+    duracao,
+    xInicio,
+    xFim,
+    zBase,
+    fase: Math.random() * Math.PI * 2
+  };
+}
+
+function atualizarFaunaMarinha(tempo) {
+  if (!grupoFaunaMarinha || !praiaAtual) return;
+
+  if (!aparicaoFaunaMarinha && tempo >= proximaAparicaoFauna) {
+    comecarAvistamentoMarinho(tempo);
+  }
+
+  const a = aparicaoFaunaMarinha;
+  if (!a) return;
+
+  const progresso = (tempo - a.inicio) / a.duracao;
+
+  if (progresso >= 1) {
+    grupoFaunaMarinha.remove(a.grupo);
+
+    a.grupo.traverse(obj => {
+      if (obj.geometry) obj.geometry.dispose();
+    });
+
+    aparicaoFaunaMarinha = null;
+    proximaAparicaoFauna = tempo + 38 + Math.random() * 42;
+    return;
+  }
+
+  const p = limitar(progresso, 0, 1);
+
+  // Os animais entram e saem suavemente do cenário.
+  const escala =
+    suavizar(Math.min(1, p * 5)) *
+    suavizar(Math.min(1, (1 - p) * 5));
+
+  a.grupo.scale.setScalar(escala);
+  a.grupo.position.x = a.xInicio + (a.xFim - a.xInicio) * p;
+  a.grupo.position.z =
+    a.zBase + Math.sin(tempo * 0.55 + a.fase) * 2.2;
+
+  if (a.tipo === 'golfinhos') {
+    a.grupo.position.y =
+      0.72 + Math.sin(tempo * 1.5 + a.fase) * 0.10;
+  } else if (a.tipo === 'cardume') {
+    a.grupo.position.y =
+      0.42 + Math.sin(tempo * 1.3 + a.fase) * 0.08;
+  } else if (a.tipo === 'tartaruga') {
+    a.grupo.position.y =
+      0.34 + Math.sin(tempo * 0.9 + a.fase) * 0.04;
+  } else {
+    a.grupo.position.y =
+      0.78 + Math.sin(tempo * 0.65 + a.fase) * 0.18;
+  }
+
+  (a.grupo.userData.animais || []).forEach(animal => {
+    const obj = animal.objeto;
+
+    if (animal.tipo === 'golfinho') {
+      obj.position.y =
+        animal.yBase +
+        Math.max(0, Math.sin(tempo * 1.65 + animal.fase)) * 1.12;
+
+      obj.rotation.z =
+        Math.sin(tempo * 2.4 + animal.fase) * 0.08;
+
+      if (obj.userData.cauda) {
+        obj.userData.cauda.rotation.y =
+          Math.sin(tempo * 7 + animal.fase) * 0.36;
+      }
+    } else if (animal.tipo === 'peixe') {
+      obj.position.y =
+        animal.yBase +
+        Math.max(0, Math.sin(tempo * 3.1 + animal.fase)) * 0.34;
+
+      if (obj.userData.cauda) {
+        obj.userData.cauda.rotation.y =
+          Math.sin(tempo * 8 + animal.fase) * 0.42;
+      }
+    } else if (animal.tipo === 'tartaruga') {
+      (obj.userData.patas || []).forEach((pata, i) => {
+        pata.rotation.x =
+          Math.sin(tempo * 2.1 + animal.fase + i) * 0.22;
+      });
+
+      obj.rotation.z =
+        Math.sin(tempo * 0.7 + animal.fase) * 0.035;
+    } else if (animal.tipo === 'baleia') {
+      if (obj.userData.cauda) {
+        obj.userData.cauda.rotation.y =
+          Math.sin(tempo * 1.8 + animal.fase) * 0.22;
+      }
+
+      if (obj.userData.jato) {
+        const ciclo =
+          Math.max(0, Math.sin(tempo * 1.5 + animal.fase));
+
+        obj.userData.jato.scale.setScalar(0.25 + ciclo * 0.9);
+      }
+    }
+  });
+}
    
   function criarFonte() {
     const g = new THREE.Group();
@@ -1268,10 +1745,19 @@ if (
       });
     }
     casasRenderizadas = [];
-    jatoFonte = null;
-     aguaMar = null;
+jatoFonte = null;
+aguaMar = null;
 ondasEspuma = [];
 praiaAtual = null;
+
+grupoFaunaMarinha = null;
+aparicaoFaunaMarinha = null;
+proximaAparicaoFauna = 0;
+
+clearTimeout(avisoFaunaTimer);
+
+const avisoFauna = $('c3sighting');
+if (avisoFauna) avisoFauna.hidden = true;
   }
 
   function construirCidade(lista, recentralizar = false) {
@@ -1318,7 +1804,8 @@ criarPraia(b, praia, extent);
     grupoCidade.add(b.construir());
 criarFonte();
 construirMar(praia);
-
+iniciarFaunaMarinha(praia);
+     
     casas.forEach((casa, i) => {
       const bloco = coords[Math.floor(i / CASAS_POR_QUARTEIRAO) + 1] || [0, 0];
       const off = OFFSETS_CASA[i % CASAS_POR_QUARTEIRAO];
@@ -1419,73 +1906,76 @@ construirMar(praia);
      CENA, LUZES E LOOP
      ============================================================ */
   function quadro() {
-    const dt = Math.min(0.05, relogio.getDelta());
-    const t = relogio.elapsedTime;
+  const dt = Math.min(0.05, relogio.getDelta());
+  const t = relogio.elapsedTime;
 
-    if (controls) { controls.update(); limitarAlvo(); }
-    if (ceu) ceu.position.copy(camera.position);
+  if (controls) {
+    controls.update();
+    limitarAlvo();
+  }
 
-    if (grupoNuvens) {
-      grupoNuvens.children.forEach(n => {
-        n.position.x += n.userData.vel * dt;
-        if (n.position.x > 900) n.position.x = -900;
-      });
-    }
-    if (jatoFonte) {
-      const s = 1 + 0.18 * Math.sin(t * 3);
-      jatoFonte.scale.y = s;
+  if (ceu) ceu.position.copy(camera.position);
+
+  if (grupoNuvens) {
+    grupoNuvens.children.forEach(n => {
+      n.position.x += n.userData.vel * dt;
+      if (n.position.x > 900) n.position.x = -900;
+    });
+  }
+
+  if (jatoFonte) {
+    const s = 1 + 0.18 * Math.sin(t * 3);
+    jatoFonte.scale.y = s;
     jatoFonte.position.y = jatoBaseY + (s - 1) * 0.45;
-       if (aguaMar && praiaAtual) {
-  const tempo = relogio.elapsedTime;
-  const pos = aguaMar.geometry.attributes.position;
-  const base = aguaMar.userData.alturasBase;
-
-  // A água sobe e desce suavemente.
-  aguaMar.position.y =
-    0.035 + Math.sin(tempo * 0.32) * 0.025;
-
-  // Desloca cada vértice para produzir ondulações reais na malha.
-  for (let i = 0; i < pos.count; i++) {
-    pos.setY(
-      i,
-      base[i] + alturaOnda(
-        pos.getX(i),
-        pos.getZ(i),
-        tempo
-      )
-    );
   }
 
-  pos.needsUpdate = true;
-  aguaMar.geometry.computeVertexNormals();
+  // Maré independente da fonte da praça.
+  if (aguaMar && praiaAtual) {
+    const pos = aguaMar.geometry.attributes.position;
+    const base = aguaMar.userData.alturasBase;
 
-  // A espuma avança e recua acompanhando as ondas.
-  ondasEspuma.forEach(o => {
-    const balanco = Math.sin(tempo * 0.62 + o.fase);
+    aguaMar.position.y =
+      0.035 + Math.sin(t * 0.32) * 0.025;
 
-    const z =
-      costaEm(o.x, praiaAtual) -
-      6 +
-      balanco * 5.8 +
-      o.deslocamento;
-
-    o.malha.position.z = z;
-
-    o.malha.position.y =
-      aguaMar.position.y +
-      alturaOnda(
-        o.x,
-        z - aguaMar.position.z,
-        tempo
-      ) +
-      0.035;
-  });
-}
+    for (let i = 0; i < pos.count; i++) {
+      pos.setY(
+        i,
+        base[i] + alturaOnda(
+          pos.getX(i),
+          pos.getZ(i),
+          t
+        )
+      );
     }
-     
-    renderer.render(scene, camera);
+
+    pos.needsUpdate = true;
+    aguaMar.geometry.computeVertexNormals();
+
+    ondasEspuma.forEach(o => {
+      const balanco = Math.sin(t * 0.62 + o.fase);
+
+      const z = costaEm(o.x, praiaAtual) - 6
+        + balanco * 5.8
+        + o.deslocamento;
+
+      o.malha.position.z = z;
+
+      o.malha.position.y =
+        aguaMar.position.y +
+        alturaOnda(
+          o.x,
+          z - aguaMar.position.z,
+          t
+        ) +
+        0.035;
+    });
   }
 
+  // Atualiza os avistamentos da fauna marinha.
+  atualizarFaunaMarinha(t);
+
+  renderer.render(scene, camera);
+}
   function rodar() {
     if (!renderer) return;
     if (!relogio) relogio = new THREE.Clock();
@@ -1661,6 +2151,7 @@ construirMar(praia);
         '</div>' +
       '</div>' +
       '<div id="c3canvas"></div>' +
+       '<div id="c3sighting" class="c3-sighting" hidden aria-live="polite"></div>' +
       '<div class="c3-help">Arraste para explorar a cidade e a praia. A maré se move sozinha; toque em uma casa para conhecê-la.</div>' +
       '<div id="c3info" hidden>' +
         '<button id="c3infoclose" type="button" aria-label="Fechar informações">×</button>' +
