@@ -4635,6 +4635,8 @@ function pararCronometro() {
 // REAÇÃO AO CLIMA 
 // ==========================================
 async function checarClima() {
+  // Só consultar a localização quando a pessoa ativar o clima.
+  if (localStorage.getItem('nebula-clima-local') !== '1') return;
   if (!navigator.geolocation) return;
   
   navigator.geolocation.getCurrentPosition(async (pos) => {
