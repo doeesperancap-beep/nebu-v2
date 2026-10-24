@@ -33,7 +33,15 @@
     caminho:  '#E3D9BC',
     gramado:  '#A8D27A',
     poste:    '#8B8A82',
-    lampada:  '#EF7B6E'
+    lampada:  '#EF7B6E',
+     areia: '#E8C987',
+   areiaClara: '#F5E2B0',
+   mar: '#39B8BF',
+   marProfundo: '#278D9B',
+   espuma: '#F7F0D9',
+   madeiraPraia: '#B98150',
+   guardaSol: '#E47D55',
+   azulPraia: '#80CFD0'
   };
   const CEU = { topo:'#74BBE8', meio:'#B9E0F2', horizonte:'#DCEEE2' };
   const COR_NEVOA = '#DCEEE2';
@@ -54,6 +62,10 @@
   let houveMapaComCasas = false;
   let raioAtual = 1;
   let relogio = null;
+
+let aguaMar = null;
+let ondasEspuma = [];
+let praiaAtual = null;
 
   const $ = id => document.getElementById(id);
   const ehCelular = () => Math.min(window.innerWidth, window.innerHeight) < 700;
@@ -79,6 +91,48 @@
   const pick = (lista, n) => lista[(n >>> 0) % lista.length];
   const limitar = (v, a, b) => Math.max(a, Math.min(b, v));
 
+const suavizar = t => {
+  t = limitar(t, 0, 1);
+  return t * t * (3 - 2 * t);
+};
+
+function parametrosPraia(extent) {
+  const areiaInicio = extent + 4;
+  const costaZ = extent + 72;
+  const largura = Math.max(300, extent * 2 + 140);
+  const larguraMar = largura + 100;
+  const inicioMar = costaZ - 14;
+  const profundidadeMar = Math.max(400, extent * 2.75);
+
+  return {
+    areiaInicio,
+    costaZ,
+    largura,
+    larguraMar,
+    inicioMar,
+    profundidadeMar,
+    fimMar: inicioMar + profundidadeMar
+  };
+}
+
+// Cria pequenas irregularidades na linha da costa.
+function costaEm(x, praia) {
+  const recorte =
+    Math.round((rand2(x, 6.4) - 0.5) * 2) * 1.2;
+
+  return praia.costaZ
+    + Math.sin(x * 0.021) * 4.2
+    + Math.sin(x * 0.057 + 1.1) * 1.9
+    + recorte;
+}
+
+// Ondas suaves, com movimentos em várias direções.
+function alturaOnda(x, z, tempo) {
+  return Math.sin(x * 0.035 + tempo * 1.15) * 0.18
+    + Math.cos(z * 0.06 - tempo * 1.35) * 0.11
+    + Math.sin((x + z) * 0.022 + tempo * 0.85) * 0.06;
+}
+   
   const CACHE_COR = new Map();
   function corTHREE(hex) {
     let c = CACHE_COR.get(hex);
@@ -515,6 +569,406 @@
     banco(b,  5.5, -1.7);
   }
 
+/* ============================================================
+   PRAIA NEBO — areia, calçadão, quiosque e acessórios
+   ============================================================ */
+
+function palmeira(b, x, z, s = 1) {
+  // Tronco em blocos, combinando com o estilo voxel da cidade.
+  for (let i = 0; i < 4; i++) {
+    b.caixa(
+      0.42 * s, 0.92 * s, 0.42 * s,
+      '#9A6A3E',
+      x + i * 0.075 * s,
+      Y_CHAO + (0.46 + i * 0.68) * s,
+      z - i * 0.025 * s
+    );
+  }
+
+  const copaY = Y_CHAO + 3.15 * s;
+
+  // Copa em cruz, com vários tons de verde.
+  b.caixa(
+    2.65 * s, 0.22 * s, 0.48 * s,
+    '#76B84B', x, copaY, z
+  );
+
+  b.caixa(
+    0.48 * s, 0.22 * s, 2.65 * s,
+    '#88C953', x, copaY + 0.01 * s, z
+  );
+
+  b.caixa(
+    1.75 * s, 0.18 * s, 0.42 * s,
+    '#9CD95E',
+    x - 0.22 * s, copaY - 0.12 * s, z - 0.18 * s
+  );
+
+  b.caixa(
+    0.42 * s, 0.18 * s, 1.75 * s,
+    '#A7D96B',
+    x + 0.18 * s, copaY - 0.10 * s, z + 0.20 * s
+  );
+
+  b.caixa(
+    0.22 * s, 0.22 * s, 0.22 * s,
+    '#74512E',
+    x - 0.14 * s, copaY - 0.18 * s, z
+  );
+
+  b.caixa(
+    0.22 * s, 0.22 * s, 0.22 * s,
+    '#74512E',
+    x + 0.16 * s, copaY - 0.18 * s, z + 0.12 * s
+  );
+}
+
+function criarSombrilla(b, x, z, cor, s = 1) {
+  b.caixa(
+    0.14 * s, 1.02 * s, 0.14 * s,
+    PAL.madeira, x, Y_CHAO + 0.51 * s, z
+  );
+
+  b.caixa(
+    2.65 * s, 0.18 * s, 2.65 * s,
+    '#FFF1D0', x, Y_CHAO + 1.10 * s, z
+  );
+
+  b.caixa(
+    2.65 * s, 0.075 * s, 0.62 * s,
+    cor, x, Y_CHAO + 1.21 * s, z - 0.80 * s
+  );
+
+  b.caixa(
+    2.65 * s, 0.075 * s, 0.62 * s,
+    cor, x, Y_CHAO + 1.21 * s, z + 0.80 * s
+  );
+}
+
+function criarEspreguicadeira(b, x, z, cor) {
+  b.caixa(
+    1.15, 0.12, 2.35,
+    '#FFF0CF', x, 0.20, z
+  );
+
+  b.caixa(
+    1.03, 0.055, 1.00,
+    cor, x, 0.285, z - 0.48
+  );
+
+  b.caixa(
+    1.03, 0.055, 0.72,
+    '#F8EFD8', x, 0.285, z + 0.40
+  );
+
+  for (const sx of [-0.42, 0.42]) {
+    b.caixa(
+      0.10, 0.22, 0.10,
+      PAL.madeira, x + sx, 0.12, z - 0.78
+    );
+
+    b.caixa(
+      0.10, 0.22, 0.10,
+      PAL.madeira, x + sx, 0.12, z + 0.78
+    );
+  }
+}
+
+function criarQuiosquePraia(b, x, z) {
+  b.caixa(
+    4.5, 0.12, 3.6,
+    PAL.madeiraPraia, x, 0.13, z
+  );
+
+  b.caixa(
+    4.0, 1.75, 3.0,
+    '#F4E5C2', x, 1.00, z
+  );
+
+  b.caixa(
+    4.65, 0.25, 3.75,
+    PAL.guardaSol, x, 2.02, z
+  );
+
+  // Janela de atendimento voltada para a areia.
+  b.caixa(
+    1.9, 0.58, 0.12,
+    PAL.azulPraia, x, 1.18, z + 1.56
+  );
+
+  b.caixa(
+    4.1, 0.12, 0.18,
+    PAL.madeira, x, 0.89, z + 1.62
+  );
+
+  b.caixa(
+    4.25, 0.09, 0.10,
+    PAL.areiaClara, x, 1.86, z + 1.78
+  );
+}
+
+function criarPraia(b, praia, extent) {
+  const segmentos = Math.max(
+    22,
+    Math.ceil(praia.largura / 9)
+  );
+
+  const larguraSegmento = praia.largura / segmentos;
+
+  // A linha da costa varia por segmento para não parecer um retângulo.
+  for (let i = 0; i < segmentos; i++) {
+    const x =
+      -praia.largura / 2 +
+      (i + 0.5) * larguraSegmento;
+
+    const costa = costaEm(x, praia);
+    const profundidade = Math.max(
+      1,
+      costa - praia.areiaInicio
+    );
+
+    const cor =
+      (i % 5 === 0 || i % 7 === 0)
+        ? PAL.areiaClara
+        : PAL.areia;
+
+    b.caixa(
+      larguraSegmento + 0.28,
+      0.10,
+      profundidade,
+      cor,
+      x,
+      0.04,
+      praia.areiaInicio + profundidade / 2,
+      0.035
+    );
+  }
+
+  // Calçadão que liga a rua à praia.
+  const caminhoInicio = extent - 25;
+  const caminhoFim = praia.costaZ - 6;
+  const caminhoComprimento = caminhoFim - caminhoInicio;
+  const caminhoCentro = (caminhoInicio + caminhoFim) / 2;
+
+  b.caixa(
+    4.8, 0.075, caminhoComprimento,
+    PAL.madeiraPraia,
+    0, 0.11, caminhoCentro
+  );
+
+  // Ripas visíveis no piso de madeira.
+  for (
+    let z = caminhoInicio + 0.8;
+    z < caminhoFim;
+    z += 1.45
+  ) {
+    b.caixa(
+      4.72, 0.018, 0.10,
+      '#D5A16B', 0, 0.158, z, 0.02
+    );
+  }
+
+  // Guarda-corpos apenas na parte sobre a areia.
+  const guardaInicio = extent + 8;
+  const guardaFim = caminhoFim;
+  const guardaComprimento = guardaFim - guardaInicio;
+  const guardaCentro = (guardaInicio + guardaFim) / 2;
+
+  if (guardaComprimento > 6) {
+    for (const lado of [-1, 1]) {
+      b.caixa(
+        0.12, 0.085, guardaComprimento,
+        PAL.madeira, lado * 2.35, 0.535, guardaCentro
+      );
+
+      for (let z = guardaInicio + 3; z < guardaFim; z += 7) {
+        b.caixa(
+          0.12, 0.38, 0.12,
+          PAL.madeira, lado * 2.35, 0.34, z
+        );
+      }
+    }
+  }
+
+  // Palmeiras nas laterais para emoldurar a praia.
+  palmeira(
+    b, -praia.largura * 0.405,
+    praia.areiaInicio + 12, 0.95
+  );
+
+  palmeira(
+    b, praia.largura * 0.405,
+    praia.areiaInicio + 14, 0.95
+  );
+
+  // Guarda-sóis coloridos e espreguiçadeiras.
+  const guardaSois = [
+    { x: -0.23, z: praia.areiaInicio + 20, cor: '#E47D55' },
+    { x:  0.23, z: praia.areiaInicio + 22, cor: '#82CFC9' },
+    { x: -0.13, z: praia.areiaInicio + 43, cor: '#F0BD50' },
+    { x:  0.13, z: praia.areiaInicio + 45, cor: '#A9A0D8' }
+  ];
+
+  guardaSois.forEach((item, i) => {
+    const x = item.x * praia.largura;
+
+    criarSombrilla(
+      b, x, item.z, item.cor,
+      i % 2 === 0 ? 1 : 0.92
+    );
+
+    criarEspreguicadeira(
+      b,
+      x + (x < 0 ? 3 : -3),
+      item.z + 4.2,
+      i % 2 === 0 ? '#80CFD0' : '#E7A5A2'
+    );
+  });
+
+  // Quiosque pequeno, mantendo o estilo dos outros prédios.
+  criarQuiosquePraia(
+    b,
+    -praia.largura * 0.34,
+    praia.areiaInicio + 34
+  );
+
+  // Pequenas conchas e pedrinhas perto da água.
+  const conchas = [
+    '#F28FAD', '#F7D14C', '#FFFFFF',
+    '#E86F6F', '#8BD4D2'
+  ];
+
+  for (let i = 0; i < 24; i++) {
+    const x =
+      (rand2(i + 2, 19.7) - 0.5) *
+      praia.largura * 0.82;
+
+    const z =
+      praia.costaZ - 8 -
+      rand2(i + 6.2, 7.4) * 12;
+
+    if (Math.abs(x) < 4) continue;
+
+    b.caixa(
+      0.22 + rand2(i, 20) * 0.18,
+      0.055,
+      0.16,
+      pick(conchas, Math.floor(rand2(i, 21) * conchas.length)),
+      x, 0.12, z
+    );
+  }
+}
+
+/* ============================================================
+   MAR ANIMADO — ondas e espuma que acompanha a maré
+   ============================================================ */
+function construirMar(praia) {
+  praiaAtual = praia;
+
+  const segmentosX = Math.max(
+    40,
+    Math.min(60, Math.ceil(praia.larguraMar / 7))
+  );
+
+  const geometria = new THREE.PlaneGeometry(
+    praia.larguraMar,
+    praia.profundidadeMar,
+    segmentosX,
+    44
+  );
+
+  const pos = geometria.attributes.position;
+
+  // Curva a borda da água para acompanhar os recortes da areia.
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i);
+
+    pos.setY(
+      i,
+      pos.getY(i) - (costaEm(x, praia) - praia.costaZ)
+    );
+  }
+
+  geometria.rotateX(-Math.PI / 2);
+  geometria.computeVertexNormals();
+
+  aguaMar = new THREE.Mesh(
+    geometria,
+    mat(PAL.mar, {
+      roughness: 0.28,
+      metalness: 0,
+      flatShading: true
+    })
+  );
+
+  aguaMar.position.set(
+    0,
+    0.035,
+    praia.inicioMar + praia.profundidadeMar / 2
+  );
+
+  // Guarda a altura original de cada vértice para animar sem acumular erros.
+  const vertices = geometria.attributes.position;
+  const alturasBase = new Float32Array(vertices.count);
+
+  for (let i = 0; i < vertices.count; i++) {
+    alturasBase[i] = vertices.getY(i);
+  }
+
+  aguaMar.userData.alturasBase = alturasBase;
+  aguaMar.frustumCulled = false;
+  aguaMar.castShadow = false;
+  aguaMar.receiveShadow = false;
+
+  grupoCidade.add(aguaMar);
+
+  // Espuma em fragmentos para a onda não parecer uma linha reta.
+  ondasEspuma = [];
+
+  const materialEspuma = mat(PAL.espuma, {
+    transparent: true,
+    opacity: 0.82,
+    depthWrite: false,
+    roughness: 1
+  });
+
+  const total = Math.max(
+    28,
+    Math.min(100, Math.ceil(praia.largura / 8))
+  );
+
+  for (let i = 0; i < total; i++) {
+    const x =
+      -praia.largura / 2 +
+      (i + 0.5) * praia.largura / total;
+
+    const largura = praia.largura / total;
+    const w = largura * (0.48 + rand2(i, 23) * 0.42);
+    const d = 0.32 + rand2(i, 25) * 0.65;
+
+    const malha = new THREE.Mesh(
+      new THREE.BoxGeometry(w, 0.035, d),
+      materialEspuma
+    );
+
+    const fase = rand2(i, 8) * Math.PI * 2;
+    const deslocamento = (rand2(i, 11) - 0.5) * 2.4;
+
+    malha.position.set(
+      x,
+      0.12,
+      costaEm(x, praia) - 6 + deslocamento
+    );
+
+    malha.castShadow = false;
+    malha.receiveShadow = false;
+    malha.renderOrder = 2;
+
+    grupoCidade.add(malha);
+    ondasEspuma.push({ malha, x, fase, deslocamento });
+  }
+}
+   
   function criarFonte() {
     const g = new THREE.Group();
 
@@ -580,7 +1034,8 @@
     const deslocamento = Math.max(175, extent * 0.22);
     const raioMorro = Math.max(145, extent * 0.24);
     const escalaAltura = Math.max(1, extent / 330);
-
+    const praia = parametrosPraia(extent);
+     
     const picos = [
       [ extent + deslocamento, -extent * 0.14, 52],
       [-extent - deslocamento,  extent * 0.10, 60],
@@ -612,7 +1067,24 @@
         morros += altura * infl * infl * escalaAltura;
       }
 
-      pos.setZ(i, suave * (4 + ondas * 13 + morros));
+      const alturaNatural = suave * (4 + ondas * 13 + morros);
+
+const faixaZ =
+  suavizar((z - (extent - 14)) / 22) *
+  (1 - suavizar((z - (praia.fimMar - 18)) / 68));
+
+const faixaX =
+  1 - suavizar(
+    (Math.abs(x) - praia.larguraMar / 2 + 8) / 78
+  );
+
+const aplainar = limitar(faixaZ * faixaX, 0, 1);
+
+// Mantém o terreno plano sob a faixa de areia e sob o mar.
+pos.setZ(
+  i,
+  alturaNatural * (1 - aplainar) + 0.12 * aplainar
+);
     }
 
     geo.computeVertexNormals();
@@ -639,7 +1111,25 @@
         tmp.set(PEDRAS_TERRENO[Math.floor(sorteio * 97) % PEDRAS_TERRENO.length]);
         c.lerp(tmp, Math.min(1, (alt - 16) / 22));
       }
+const zCentro = -cy;
 
+if (
+  Math.abs(cx) <= praia.largura / 2 &&
+  zCentro >= praia.areiaInicio &&
+  zCentro <= costaEm(cx, praia)
+) {
+  c.set(
+    sorteio > 0.48 ? PAL.areia : PAL.areiaClara
+  );
+} else if (
+  Math.abs(cx) <= praia.larguraMar / 2 &&
+  zCentro >= costaEm(cx, praia) - 12 &&
+  zCentro <= praia.fimMar + 8
+) {
+  c.set(PAL.marProfundo);
+}
+
+       
       for (let j = 0; j < 3; j++) {
         const k = (i + j) * 3;
         cores[k] = c.r; cores[k + 1] = c.g; cores[k + 2] = c.b;
@@ -779,6 +1269,9 @@
     }
     casasRenderizadas = [];
     jatoFonte = null;
+     aguaMar = null;
+ondasEspuma = [];
+praiaAtual = null;
   }
 
   function construirCidade(lista, recentralizar = false) {
@@ -795,7 +1288,8 @@
 
     raioAtual = Math.max(1, raio);
     const extent = (raioAtual + 1.2) * BLOCO;
-
+    const praia = parametrosPraia(extent);
+     
     // Névoa acompanha o tamanho da cidade
     if (scene.fog) {
       scene.fog.near = Math.max(180, extent * 1.25);
@@ -808,7 +1302,8 @@
     const b = new Mesclador();
     coords.forEach(c => gramado(b, c[0], c[1]));
     criarRuas(b, raioAtual, extent);
-    criarPraca(b);
+criarPraca(b);
+criarPraia(b, praia, extent);
 
     const blocosUsados = new Set();
     casas.forEach((c, i) => blocosUsados.add(Math.floor(i / CASAS_POR_QUARTEIRAO) + 1));
@@ -821,7 +1316,8 @@
     });
 
     grupoCidade.add(b.construir());
-    criarFonte();
+criarFonte();
+construirMar(praia);
 
     casas.forEach((casa, i) => {
       const bloco = coords[Math.floor(i / CASAS_POR_QUARTEIRAO) + 1] || [0, 0];
@@ -938,8 +1434,55 @@
     if (jatoFonte) {
       const s = 1 + 0.18 * Math.sin(t * 3);
       jatoFonte.scale.y = s;
-      jatoFonte.position.y = jatoBaseY + (s - 1) * 0.45;
+    jatoFonte.position.y = jatoBaseY + (s - 1) * 0.45;
+       if (aguaMar && praiaAtual) {
+  const tempo = relogio.elapsedTime;
+  const pos = aguaMar.geometry.attributes.position;
+  const base = aguaMar.userData.alturasBase;
+
+  // A água sobe e desce suavemente.
+  aguaMar.position.y =
+    0.035 + Math.sin(tempo * 0.32) * 0.025;
+
+  // Desloca cada vértice para produzir ondulações reais na malha.
+  for (let i = 0; i < pos.count; i++) {
+    pos.setY(
+      i,
+      base[i] + alturaOnda(
+        pos.getX(i),
+        pos.getZ(i),
+        tempo
+      )
+    );
+  }
+
+  pos.needsUpdate = true;
+  aguaMar.geometry.computeVertexNormals();
+
+  // A espuma avança e recua acompanhando as ondas.
+  ondasEspuma.forEach(o => {
+    const balanco = Math.sin(tempo * 0.62 + o.fase);
+
+    const z =
+      costaEm(o.x, praiaAtual) -
+      6 +
+      balanco * 5.8 +
+      o.deslocamento;
+
+    o.malha.position.z = z;
+
+    o.malha.position.y =
+      aguaMar.position.y +
+      alturaOnda(
+        o.x,
+        z - aguaMar.position.z,
+        tempo
+      ) +
+      0.035;
+  });
+}
     }
+     
     renderer.render(scene, camera);
   }
 
@@ -1107,7 +1650,7 @@
     el.innerHTML =
       '<div class="c3-top">' +
         '<div class="c3-title">' +
-          '<span class="c3-eyebrow">Universo compartilhado</span>' +
+          '<span class="c3-eyebrow">Cidade costeira em expansão</span>' +
           '<strong>Cidade Nebo</strong>' +
           '<span id="c3count">Carregando casas…</span>' +
           '<span id="c3status">Aguardando conexão…</span>' +
@@ -1118,7 +1661,7 @@
         '</div>' +
       '</div>' +
       '<div id="c3canvas"></div>' +
-      '<div class="c3-help">Arraste para explorar. Use a roda do mouse para aproximar. Toque em uma casa para conhecê-la.</div>' +
+      '<div class="c3-help">Arraste para explorar a cidade e a praia. A maré se move sozinha; toque em uma casa para conhecê-la.</div>' +
       '<div id="c3info" hidden>' +
         '<button id="c3infoclose" type="button" aria-label="Fechar informações">×</button>' +
         '<span class="c3-info-eyebrow">Casa da Nebo</span>' +
