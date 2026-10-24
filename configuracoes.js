@@ -169,6 +169,54 @@
   gatilho.innerHTML = '<span aria-hidden="true">⚙</span>';
   document.body.appendChild(gatilho);
 
+// Esconde configurações enquanto outra tela ocupa o espaço.
+const contextosQueEscondemConfig = [
+  '#panel.on',
+  '#estado.on',
+  '#biblioteca',
+  '#doceria',
+  '#cidade.on',
+  '#cidade3d:not([hidden])',
+  '#telaSpa',
+  '#tela-foco',
+  '#bib-loja-painel',
+  '#bib-escolha',
+  '#bib-menu'
+];
+
+function atualizarBotaoConfig() {
+  const ocupado =
+    document.body.classList.contains('modo-cidade') ||
+    contextosQueEscondemConfig.some(seletor => {
+      const el = document.querySelector(seletor);
+
+      if (!el || !el.isConnected || el.hidden) return false;
+
+      const estilo = getComputedStyle(el);
+
+      return estilo.display !== 'none' &&
+             estilo.visibility !== 'hidden' &&
+             el.getClientRects().length > 0;
+    });
+
+  gatilho.classList.toggle('cfg-context-hidden', ocupado);
+  gatilho.setAttribute('aria-hidden', ocupado ? 'true' : 'false');
+  gatilho.tabIndex = ocupado ? -1 : 0;
+}
+
+const observarContextosConfig = new MutationObserver(
+  atualizarBotaoConfig
+);
+
+observarContextosConfig.observe(document.body, {
+  subtree: true,
+  childList: true,
+  attributes: true,
+  attributeFilter: ['class', 'hidden']
+});
+
+atualizarBotaoConfig();
+   
   function estadoSwitch(chave) {
     const ligado = !!config[chave];
 
