@@ -1476,3 +1476,8 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Não cobrir botões de outros painéis com as configurações. */
+.cfg-open-button.cfg-context-hidden {
+  display: none !important;
+}
