@@ -2170,18 +2170,11 @@ function startDance(sec = 10) {
 }
 
 function joyTick() {
-  if (S.humor >= 99 && mood === 'neutral' && !gOn && Math.random() < .01) startDance(5);
+  if (S.humor >= 99 && mood === 'neutral' && !gOn && Math.random() < .01) {
+    startDance(5);
+  }
 
   if (!gOn && !S.conectado && Math.random() < 0.03) {
-    // Tenta um pensamento da IA (no máximo 1 a cada 25 min)
-    if (typeof pensamentoPodeIA === 'function' && S.pers && pensamentoPodeIA()) {
-      pensamentoEspontaneo().then(r => {
-        if (r && !gOn && !processando) aplicarResposta(r);
-      });
-      return;
-    }
-
-    // Se a IA estiver em cooldown, usa os pensamentos fixos
     const pensamentos = [
       { texto: 'Será que as estrelas sentem frio? 🌌', exp: 'curious' },
       { texto: 'Eu queria comer um doce agora... 🍰', exp: 'sad' },
@@ -2189,6 +2182,7 @@ function joyTick() {
       { texto: 'Acho que ouvi um barulho! 👀', exp: 'surprised' },
       { texto: 'Cada vez que você respira, nasce uma estrela. ✨', exp: 'carinho' }
     ];
+
     const p = rnd(pensamentos);
     set(p.exp, 5000, p.texto);
   }
@@ -4556,10 +4550,6 @@ function mostrarAviso(nova, key) {
 
   document.body.appendChild(aviso);
 }
-$('bVoz').onclick = () => {
-  if (ouvindo) pararVoz();
-  else iniciarVoz('passivo'); 
-};
 
 /* ============================================================
    MODO FOCO / CRONÔMETRO
