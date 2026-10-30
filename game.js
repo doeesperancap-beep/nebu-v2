@@ -580,8 +580,9 @@ function onOri(e) {
 
   const g = clamp(e.gamma || 0, -45, 45) / 45;
   const b = clamp((e.beta || 0) - 55, -40, 40) / 40;
-  if (!['scared', 'dizzy'].includes(mood))
-    eyes.style.transform = `translate(${g * 30}px, ${b * 18}px)`;
+ if (!olharAutonomoAtivo && !['scared', 'dizzy'].includes(mood)) {
+  eyes.style.transform = `translate(${g * 30}px, ${b * 18}px)`;
+}
 
   if (t < cool) return;
   if (e.beta < 15) {
@@ -695,7 +696,11 @@ const dist = () => {
   const p = [...ptrs.values()];
   return Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
 };
-const act = () => { lastAct = Date.now(); stage = 0; };
+const act = () => {
+  lastAct = Date.now();
+  stage = 0;
+  cancelarOlharAutonomo();
+};
 
 function pet(m, t) {
   if (mood !== m) set(m, 1300, t);
@@ -2187,6 +2192,104 @@ function joyTick() {
     set(p.exp, 5000, p.texto);
   }
 }
+
+
+/* ==========================================
+   NEBO AUTONOMY — OLHAR AUTÔNOMO
+   ========================================== */
+
+let olharAutonomoAtivo = false;
+let proximoOlharAutonomo = Date.now() + 5000;
+let timerRevelarOlhos = null;
+
+function cancelarOlharAutonomo() {
+  olharAutonomoAtivo = false;
+
+  clearTimeout(timerRevelarOlhos);
+  timerRevelarOlhos = null;
+
+  eyes.classList.remove('olhos-escondidos');
+  eyes.style.transform = '';
+
+  proximoOlharAutonomo = Date.now() + 5000;
+}
+
+function olharAutonomoTick() {
+
+  const podeAgir =
+    S.modo === 'nebo' &&
+    !!S.pers &&
+    !document.hidden &&
+    !gOn &&
+    !dancing &&
+    !P.classList.contains('on') &&
+    !document.body.classList.contains('modo-cidade');
+
+  const impedida =
+    ['sleepy', 'sick', 'scared', 'dizzy', 'angry', 'cry'].includes(mood);
+
+  if (
+    !podeAgir ||
+    impedida ||
+    eyes.classList.contains('wig') ||
+    Date.now() - lastAct < 4500
+  ) {
+    if (olharAutonomoAtivo) cancelarOlharAutonomo();
+    return;
+  }
+
+  olharAutonomoAtivo = true;
+
+  if (Date.now() < proximoOlharAutonomo) return;
+
+  // Próximo movimento: intervalo imprevisível
+  proximoOlharAutonomo = Date.now() + 5000 + Math.random() * 4500;
+
+  // Direções possíveis dentro do rostinho
+  const olhares = [
+    [-18, -4],
+    [-14, 7],
+    [0, -8],
+    [16, -4],
+    [18, 6],
+    [0, 8],
+    [-8, 0],
+    [9, -2]
+  ];
+
+  const [x, y] = rnd(olhares);
+
+  // Move os dois olhos juntos
+  eyes.style.transform = `translate(${x}px, ${y}px)`;
+
+  // De vez em quando, ela se esconde!
+  if (Math.random() < 0.12) {
+
+    eyes.classList.add('olhos-escondidos');
+
+    timerRevelarOlhos = setTimeout(() => {
+      if (!olharAutonomoAtivo) return;
+
+      eyes.classList.remove('olhos-escondidos');
+      eyes.style.transform = 'translate(0px, 0px)';
+
+    }, 750 + Math.random() * 300);
+
+  } else {
+
+    // Depois de observar alguma coisa, volta ao centro
+    timerRevelarOlhos = setTimeout(() => {
+      if (!olharAutonomoAtivo) return;
+
+      eyes.style.transform = 'translate(0px, 0px)';
+
+    }, 900 + Math.random() * 700);
+  }
+}
+
+// Verifica periodicamente se chegou a hora de se movimentar
+setInterval(olharAutonomoTick, 500);
+
 
 /* ============ MUNDO (modo Nébula) ============ */
 function mundo() {
