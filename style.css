@@ -54,6 +54,12 @@ html, body {
   border-radius: 50%; transition: all .25s;
 }
 
+/* Olhos se escondendo */
+#eyes.olhos-escondidos .eye {
+  transform: scaleY(.025) scaleX(.35) !important;
+  opacity: 0;
+}
+
 /* ---------- Boca ---------- */
 #mouth::before { content: ""; display: none; }
 body[data-m=happy]  #mouth::before,
