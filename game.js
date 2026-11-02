@@ -298,6 +298,23 @@ let S = (() => {
   try {
     const raw = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null');
     const s = raw ? { ...DEFAULT, ...raw } : { ...DEFAULT };
+    // Remove dados exclusivos da antiga IA
+const camposIA = ['memoriaIA', 'conversaRecente', 'nomeUsuario'];
+
+let removeuDadosIA = false;
+
+camposIA.forEach(chave => {
+  if (Object.prototype.hasOwnProperty.call(s, chave)) {
+    delete s[chave];
+    removeuDadosIA = true;
+  }
+});
+
+if (removeuDadosIA) {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(s));
+  } catch {}
+}
     // Garante que campos novos existam (pra Nébulas antigas)
     if (!s.ingredientes) s.ingredientes = {};
 if (!s.docesProntos) s.docesProntos = [];
