@@ -2448,16 +2448,6 @@ function iniciarModo() {
   }
 }
 
-  // ===== Modo Nébula =====
-  document.body.classList.remove('modo-cidade');
-  if (cidade) cidade.hidden = true;
-
-  if (!S.nome) {
-    setTimeout(welcomePanel, 400);
-  } else if (!S.pers) {
-    setTimeout(persPanel, 800);
-  }
-}
 /* ============ CIDADE ============ */
 const CIDADE_PREDIOS = {
   // Fileira de cima (prédios altos)
