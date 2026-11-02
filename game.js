@@ -1816,113 +1816,176 @@ function escolherSabonete() {
   c.addEventListener('pointerdown', clicar);
 }
 
-/* Banho de verdade, com o sabonete escolhido */
 function comecarBanho(sabKey) {
   const sab = SABONETES[sabKey];
   if (!sab) return;
 
   const c = document.createElement('canvas');
-  c.width = innerWidth; c.height = innerHeight;
-  c.style.cssText = 'position:fixed;inset:0;z-index:8';
+  c.width = innerWidth;
+  c.height = innerHeight;
+  c.style.cssText = 'position:fixed;inset:0;z-index:8;pointer-events:none';
   document.body.appendChild(c);
+
   const x = c.getContext('2d');
+  let etapa = 'ensaboar';
+  let espuma = [];
+  let arrastando = false;
+  let ponteiroId = null;
 
-  // Barra embaixo com botão
-  const bar = document.createElement('div');
-  bar.style.cssText = 'position:fixed;z-index:9;left:0;right:0;bottom:24px;text-align:center';
-  const b = document.createElement('button');
-  b.style.cssText = 'background:#ffffff26;color:#fff;border:0;border-radius:22px;padding:12px 22px;font-size:17px';
-  b.textContent = '🧼 Esfregar';
-  bar.appendChild(b);
-  document.body.append(c, bar);
+  // O próprio emoji é a ferramenta.
+  // Primeiro sabonete, depois chuveiro.
+  const ferramenta = document.createElement('div');
+  ferramenta.textContent = sab.emoji;
+  ferramenta.setAttribute('aria-label', 'Arraste o sabonete');
 
-  // Sabonete no canto (visual)
-  const saboneteEl = document.createElement('div');
-  saboneteEl.textContent = sab.emoji;
-  saboneteEl.style.cssText = `
-    position: fixed;
-    bottom: 100px;
-    left: 20px;
-    font-size: 50px;
-    z-index: 9;
-    pointer-events: none;
-    filter: drop-shadow(0 4px 8px rgba(93,79,158,.3));
-    animation: flt 2s ease-in-out infinite;
+  ferramenta.style.cssText = `
+    position:fixed;
+    left:50%;
+    bottom:calc(24px + env(safe-area-inset-bottom, 0px));
+    transform:translateX(-50%);
+    z-index:12;
+    width:76px;
+    height:76px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:54px;
+    line-height:1;
+    cursor:grab;
+    user-select:none;
+    -webkit-user-select:none;
+    touch-action:none;
+    pointer-events:auto;
+    filter:drop-shadow(0 4px 8px rgba(93,79,158,.3));
+    animation:flt 2s ease-in-out infinite;
   `;
-  document.body.appendChild(saboneteEl);
 
-  let step = 0, foam = [], down = 0;
+  document.body.appendChild(ferramenta);
 
-  say(sab.fala, 3200);
-
-  const draw = () => {
+  const desenharEspuma = () => {
     x.clearRect(0, 0, c.width, c.height);
-    foam.forEach(f => {
+
+    espuma.forEach(f => {
       x.beginPath();
-      x.arc(f.x, f.y, f.r, 0, 7);
+      x.arc(f.x, f.y, f.r, 0, Math.PI * 2);
       x.fillStyle = sab.cor;
       x.fill();
-      // Brilhinho na espuma
+
       x.beginPath();
-      x.arc(f.x - f.r * 0.3, f.y - f.r * 0.3, f.r * 0.2, 0, 7);
-      x.fillStyle = 'rgba(255,255,255,.6)';
+      x.arc(
+        f.x - f.r * .3,
+        f.y - f.r * .3,
+        f.r * .2,
+        0,
+        Math.PI * 2
+      );
+      x.fillStyle = 'rgba(255,255,255,.65)';
       x.fill();
     });
   };
 
-  b.onclick = () => {
-    if (step === 0) {
-      step = 1;
-      b.style.display = 'none';
-      say('Arraste o dedo para esfregar 🫧');
-    } else if (step === 2) {
-      step = 3;
-      b.style.display = 'none';
-      say('Agora enxágue arrastando 🚿');
-    }
+  const limparBanho = () => {
+    ferramenta.remove();
+    c.remove();
+    gOn = 0;
   };
 
-  c.onpointerdown = () => down = 1;
-  c.onpointerup = c.onpointercancel = () => down = 0;
-  c.onpointermove = e => {
-    if (!down || step < 1 || step === 2) return;
-    const px = e.clientX, py = e.clientY;
+  const terminarBanho = () => {
+    limparBanho();
 
-    if (step === 1) {
-      foam.push({
-        x: px + Math.random() * 30 - 15,
-        y: py + Math.random() * 30 - 15,
-        r: 14 + Math.random() * 16
+    S.humor = clamp(S.humor + 8);
+    S.saude = clamp(S.saude + 3);
+    S.limpeza = clamp(S.limpeza + 100);
+
+    say(falaDe(
+      'banho',
+      'Limpinha com cheirinho de ' + sab.nome.toLowerCase() + '! ✨'
+    ));
+
+    registrarEvento(
+      'tomou banho com sabonete de ' + sab.nome.toLowerCase()
+    );
+
+    ganharMoedas(5);
+    startDance(6);
+
+    setTimeout(() => set('carinho', 2500, '🥰'), 6200);
+    save();
+  };
+
+  const moverFerramenta = e => {
+    ferramenta.style.left = e.clientX + 'px';
+    ferramenta.style.top = e.clientY + 'px';
+    ferramenta.style.bottom = 'auto';
+    ferramenta.style.transform = 'translate(-50%, -50%)';
+
+    if (etapa === 'ensaboar') {
+      espuma.push({
+        x: e.clientX + Math.random() * 24 - 12,
+        y: e.clientY + Math.random() * 24 - 12,
+        r: 13 + Math.random() * 13
       });
-      set('sleepy', 1500, foam.length === 1 ? sab.fala : '');
-      if (foam.length >= 70) {
-        step = 2;
-        b.textContent = '🚿 Enxaguar';
-        b.style.display = '';
-      }
-    } else if (step === 3) {
-      foam = foam.filter(f => Math.hypot(f.x - px, f.y - py) > 55);
-      if (!foam.length) {
-        // Acabou!
-        c.remove();
-        bar.remove();
-        saboneteEl.remove();
-        gOn = 0;
 
-          S.humor = clamp(S.humor + 8);
-        S.saude = clamp(S.saude + 3);
-        S.limpeza = clamp(S.limpeza + 100);   // limpa de vez!
-       say(falaDe('banho', 'Limpinha com cheirinho de ' + sab.nome.toLowerCase() + '! ✨'));
-        registrarEvento('tomou banho com sabonete de ' + sab.nome.toLowerCase());
-        ganharMoedas(5);
-        startDance(6);
-        setTimeout(() => set('carinho', 2500, '🥰'), 6200);
-        save();
+      if (espuma.length >= 70) {
+        etapa = 'enxaguar';
+
+        ferramenta.textContent = '🚿';
+        ferramenta.setAttribute(
+          'aria-label',
+          'Arraste o chuveiro para enxaguar'
+        );
+
+        say('Agora arraste o chuveiro para tirar a espuma! 🚿', 3200);
+      }
+
+    } else if (etapa === 'enxaguar') {
+      espuma = espuma.filter(f =>
+        Math.hypot(f.x - e.clientX, f.y - e.clientY) > 58
+      );
+
+      if (espuma.length === 0) {
+        terminarBanho();
         return;
       }
     }
-    draw();
+
+    desenharEspuma();
   };
+
+  ferramenta.addEventListener('pointerdown', e => {
+    e.preventDefault();
+
+    arrastando = true;
+    ponteiroId = e.pointerId;
+
+    ferramenta.style.animation = 'none';
+    ferramenta.style.cursor = 'grabbing';
+
+    ferramenta.setPointerCapture(e.pointerId);
+    moverFerramenta(e);
+  });
+
+  ferramenta.addEventListener('pointermove', e => {
+    if (!arrastando || e.pointerId !== ponteiroId) return;
+
+    e.preventDefault();
+    moverFerramenta(e);
+  });
+
+  const soltarFerramenta = e => {
+    if (e.pointerId !== ponteiroId) return;
+
+    arrastando = false;
+    ponteiroId = null;
+
+    ferramenta.style.cursor = 'grab';
+    ferramenta.style.animation = 'flt 2s ease-in-out infinite';
+  };
+
+  ferramenta.addEventListener('pointerup', soltarFerramenta);
+  ferramenta.addEventListener('pointercancel', soltarFerramenta);
+
+  say(sab.fala + ' Arraste o sabonete pela tela! 🧼', 3500);
 }
 
 /* ============ JOGO DA NÉBULA (desvia dos bolos) ============ */
