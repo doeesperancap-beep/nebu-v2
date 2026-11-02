@@ -2239,7 +2239,7 @@ function olharAutonomoTick() {
     !document.hidden &&
     !gOn &&
     !dancing &&
-    !P.classList.contains('on') &&
+     !P.classList.contains('on');
     
   const impedida =
     ['sleepy', 'sick', 'scared', 'dizzy', 'angry', 'cry'].includes(mood);
