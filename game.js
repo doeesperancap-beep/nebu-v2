@@ -2223,8 +2223,7 @@ function olharAutonomoTick() {
     !gOn &&
     !dancing &&
     !P.classList.contains('on') &&
-    !document.body.classList.contains('modo-cidade');
-
+    
   const impedida =
     ['sleepy', 'sick', 'scared', 'dizzy', 'angry', 'cry'].includes(mood);
 
@@ -2370,24 +2369,26 @@ function modoPanel() {
   P.innerHTML = `
     <h3>O que você quer explorar?</h3>
     <p style="opacity:.7;font-size:14px;margin:8px 0 16px;line-height:1.5">
-      Cuide da sua Nebo ou visite a cidade compartilhada.
+      Cuide da sua Nebo ou conheça o novo painel.
     </p>
+
     <button data-modo="nebo" style="font-size:18px;padding:16px">
       💗 Minha Nebo
       <div style="font-size:12px;opacity:.7;margin-top:4px">
         Cuidar, conversar e brincar
       </div>
     </button>
-    <button data-modo="cidade" style="font-size:18px;padding:16px">
-      🏙️ Cidade
+
+    <button data-modo="painel" style="font-size:18px;padding:16px">
+      🧩 Modo Painel
       <div style="font-size:12px;opacity:.7;margin-top:4px">
-        Explorar as casas compartilhadas
+        Um novo espaço em construção
       </div>
     </button>
   `;
+
   P.classList.add('on');
 
-  // Pequeno delay para garantir que o innerHTML foi aplicado
   setTimeout(() => {
     P.querySelectorAll('[data-modo]').forEach(botao => {
       botao.onclick = () => {
@@ -2400,36 +2401,35 @@ function modoPanel() {
     });
   }, 50);
 }
+
 function iniciarModo() {
-  const cidade = document.getElementById('cidade3d');
 
+  // Compatibilidade com quem ainda tinha Cidade salva
   if (S.modo === 'cidade') {
-    if (P) P.classList.remove('on');
+    S.modo = 'painel';
+    save();
+  }
 
-    // NÃO esconde a UI aqui. Quem esconde é a própria cidade3d,
-    // depois que ela realmente abrir. Assim, se algo falhar,
-    // a tela nunca fica em branco.
-    if (typeof window.abrirCidade3D === 'function') {
-      window.abrirCidade3D();
-    } else {
-      // cidade3d.js ainda não carregou. Tenta por 5 segundos.
-      let tentativas = 0;
-      const intervalo = setInterval(() => {
-        tentativas++;
-        if (typeof window.abrirCidade3D === 'function') {
-          clearInterval(intervalo);
-          window.abrirCidade3D();
-        } else if (tentativas > 50) {
-          // Desistiu: volta pra escolha de modo em vez de travar
-          clearInterval(intervalo);
-          S.modo = null;
-          save();
-          modoPanel();
-        }
-      }, 100);
-    }
+  // Modo Painel: espaço provisório
+  if (S.modo === 'painel') {
+    panel(
+      '<h3>🧩 Modo Painel</h3>' +
+      '<p style="opacity:.7;line-height:1.5">' +
+      'Estamos preparando este espaço. Em breve teremos novidades! ✨' +
+      '</p>' +
+      '<button data-x="voltar-modo">← Voltar à escolha</button>'
+    );
+
     return;
   }
+
+  // Modo Nébula
+  if (!S.nome) {
+    setTimeout(welcomePanel, 400);
+  } else if (!S.pers) {
+    setTimeout(persPanel, 800);
+  }
+}
 
   // ===== Modo Nébula =====
   document.body.classList.remove('modo-cidade');
@@ -4224,6 +4224,10 @@ P.onclick = e => {
   const b = e.target.closest('button');
   if (!b) return;
   const d = b.dataset;
+  if (d.x === 'voltar-modo') {
+  voltarParaEscolhaDeModo();
+  return;
+}
 
   // Fechar
   if (d.x === 'close') { P.classList.remove('on'); pararMusicaMercado(); }
@@ -4544,7 +4548,7 @@ function xarope() {
   P.classList.remove('on');
   say('Xarope tomado! Já me sinto melhor 🍯');
   set('happy', 2500);
-      if (gOn || S.modo === 'cidade') return;   // não interrompe jogos nem o modo Cidade
+     if (gOn || S.modo === 'painel') return;
   save();
 }
 /* ============ TICK DA COMIDA ============ */
