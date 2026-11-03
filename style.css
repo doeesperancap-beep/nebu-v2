@@ -21,121 +21,119 @@ html, body {
   touch-action: none;
   user-select: none; -webkit-user-select: none;
 }
+/* ---------- Rosto (SVG kawaii) ---------- */
+:root { --ew: min(18vw, 30vh); --eye: #fff0fb; --u: calc(var(--ew) / 282); }
 
-/* ---------- Rosto ---------- */
 #screen { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
-#face { position: relative; display: flex; flex-direction: column; align-items: center; gap: calc(var(--ew) * .22); }
-#eyes { position: relative; display: flex; gap: 14%; transition: transform .25s; }
-#mouth { height: calc(var(--ew) * .4); display: flex; justify-content: center; }
-
-/* ---------- Olhos ---------- */
-.eye {
-  position: relative;
-  width: var(--ew); height: calc(var(--ew) * 1.15);
-  background-color: var(--eye);
-  background-image: radial-gradient(circle at 30% 26%, #fff 0 8%, transparent 9%);
-  border-radius: 50%; overflow: hidden;
-  transition: all .25s;
-  transform: scaleY(var(--blink, 1));
+#face {
+  position: relative; top: calc(var(--u) * -62);
+  width: calc(var(--u) * 1042); height: calc(var(--u) * 204);
+  animation: flt 4s ease-in-out infinite;
 }
-.eye::before {
-  content: ""; position: absolute;
-  left: -30%; width: 160%; top: -5%;
-  height: var(--lt, 0%); background: #000;
-  transform: rotate(calc(var(--lr, 0deg) * var(--s)));
-  transform-origin: center top; transition: all .25s;
-}
-.eye.l { --s: 1; }
-.eye.r { --s: -1; }
-.eye::after {
-  content: ""; position: absolute;
-  left: -20%; width: 140%; height: 100%;
-  top: var(--ht, 110%); background: #000;
-  border-radius: 50%; transition: all .25s;
+#eyes { position: relative; width: 100%; height: 100%; transition: transform .35s cubic-bezier(.2,.8,.3,1); }
+#eyes svg {
+  position: absolute; left: calc(var(--u) * -316); top: calc(var(--u) * -273);
+  width: calc(var(--u) * 1672); height: calc(var(--u) * 941);
+  overflow: visible; pointer-events: none;
 }
 
-/* Olhos se escondendo */
-#eyes.olhos-escondidos .eye {
-  transform: scaleY(.025) scaleX(.35) !important;
-  opacity: 0;
+.sq { transform-origin: 836px 440px; }
+.eg { transform-origin: 836px 375px; transition: opacity .3s, transform .4s; }
+#eyes.olhos-escondidos .eg { opacity: 0; transform: scaleY(.1); }
+
+.glow { filter: drop-shadow(0 0 var(--gl, 14px) var(--tint, var(--eye))); transition: filter .4s; }
+.ef { fill: var(--tint, var(--eye)); transition: fill .4s; }
+
+/* olhos */
+.sc { transition: transform .4s cubic-bezier(.34,1.56,.64,1); }
+.dg, .ag, .hg, .sg {
+  transform-box: fill-box; transform-origin: 50% 50%;
+  transition: opacity .35s ease, transform .5s cubic-bezier(.34,1.56,.64,1);
+}
+.dg { transform-origin: 50% 100%; }
+.ag, .hg, .sg { opacity: 0; transform: scale(.7); }
+.hg { fill: #ff8fb3; }
+.sg { fill: none; stroke: var(--eye); }
+.lid {
+  transition: transform .3s ease;
+  transform: translateY(calc(-110px + var(--c, 0px))) rotate(calc(var(--r, 0deg) * var(--s, 1)));
+}
+#eyes.blink .dg { transform: scaleY(.08); transition-duration: .08s; }
+
+body:is([data-m=happy],[data-m=tickle],[data-m=dance],[data-m=carinho],[data-m=dizzy]) .dg { opacity: 0; transform: scale(.75); }
+body:is([data-m=happy],[data-m=tickle],[data-m=dance]) .ag { opacity: 1; transform: scale(1); }
+body[data-m=carinho] .hg { opacity: 1; transform: scale(1); animation: beat .6s infinite; }
+body[data-m=dizzy] .sg { opacity: 1; transform: scale(1); animation: spin .6s linear infinite; }
+body:is([data-m=happy],[data-m=tickle],[data-m=dance]) { --gl: 6px; }
+
+/* humores: tom da cor + pálpebra (--c = quanto cobre, --r = inclinação) */
+body[data-m=angry]  { --tint: #ffb3b3; --c: 100px; --r: 22deg; }
+body[data-m=sad]    { --tint: #b9c9ff; --c: 95px;  --r: -20deg; }
+body[data-m=cry]    { --tint: #b9c9ff; --c: 110px; --r: -20deg; }
+body[data-m=sleepy] { --c: 150px; }
+body[data-m=bored]  { --c: 85px; }
+body[data-m=sick]   { --tint: #cfe8d0; --c: 95px; }
+body[data-m=scared] { --tint: #e8e4ff; }
+body[data-m=curious] .sc { transform: scale(1.1); }
+body[data-m=surprised] .sc { transform: scale(1.18); }
+body[data-m=scared] .sc { transform: scale(.85); }
+
+/* bochechas */
+.bs {
+  fill: #b682ad; transform-box: fill-box; transform-origin: center;
+  transition: fill .5s, opacity .4s, transform .5s cubic-bezier(.34,1.56,.64,1);
+}
+.bs.bg { fill: #454545; opacity: 0; }
+body:is([data-m=happy],[data-m=tickle],[data-m=dance]) .bs { opacity: 0; }
+body:is([data-m=happy],[data-m=tickle],[data-m=dance]) .bs.bg { opacity: 1; }
+body[data-m=carinho] .bs { fill: #ff8fb3; transform: scale(1.2); }
+body[data-m=angry] .bs { fill: #d96a6a; }
+body:is([data-m=sick],[data-m=sleepy]) .bs { opacity: .45; }
+
+/* bocas */
+.mo {
+  fill: none; stroke: var(--tint, var(--eye)); stroke-width: 24;
+  stroke-linecap: round; stroke-linejoin: round;
+  opacity: 0; transform: scale(.7);
+  transform-box: fill-box; transform-origin: center;
+  transition: opacity .3s, transform .5s cubic-bezier(.34,1.56,.64,1);
+}
+.mo.fl { fill: #fff; stroke: none; }
+body:is([data-m=neutral],[data-m=sleepy]) .mo-n,
+body:is([data-m=happy],[data-m=tickle],[data-m=dance],[data-m=carinho]) .mo-o,
+body:is([data-m=sad],[data-m=cry]) .mo-s,
+body[data-m=angry] .mo-z,
+body:is([data-m=curious],[data-m=surprised],[data-m=scared]) .mo-r,
+body[data-m=bored] .mo-f,
+body:is([data-m=sick],[data-m=dizzy]) .mo-w { opacity: 1; transform: scale(1); }
+
+/* lágrimas */
+.tr { fill: #8fd3ff; opacity: 0; }
+body[data-m=cry] .tr { animation: tear 1.1s infinite; }
+body[data-m=cry] g:last-of-type .tr { animation-delay: .5s; }
+
+/* pulinho ao mudar de humor */
+body:is([data-m=happy],[data-m=carinho],[data-m=tickle],[data-m=surprised]) .sq {
+  animation: pop .6s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes pop {
+  0% { transform: scale(1); } 25% { transform: scale(1.07,.9); }
+  55% { transform: scale(.96,1.07); } 100% { transform: scale(1); }
+}
+@keyframes tear {
+  0% { opacity: 0; transform: translateY(0); } 20% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(70px); }
 }
 
-/* ---------- Boca ---------- */
-#mouth::before { content: ""; display: none; }
-body[data-m=happy]  #mouth::before,
-body[data-m=carinho] #mouth::before {
-  display: block; width: calc(var(--ew) * .5); height: calc(var(--ew) * .2);
-  border-bottom: 5px solid var(--eye); border-radius: 0 0 50% 50%;
-}
-body[data-m=angry] #mouth::before {
-  display: block; width: calc(var(--ew) * .18); height: calc(var(--ew) * .18);
-  border-left: 5px solid #ffb3b3; border-top: 5px solid #ffb3b3;
-  transform: rotate(45deg); margin-top: 8px;
-}
-body[data-m=sad] #mouth::before {
-  display: block; width: calc(var(--ew) * .3); height: calc(var(--ew) * .14);
-  border-top: 5px solid #b9c9ff; border-radius: 50% 50% 0 0; margin-top: 8px;
-}
-body[data-m=cry] #mouth::before {
-  display: block; width: calc(var(--ew) * .5); height: calc(var(--ew) * .3);
-  background: #8fd3ff; border-radius: 6px 6px 50% 50%;
-}
-body[data-m=curious] #mouth::before,
-body[data-m=surprised] #mouth::before {
-  display: block; width: calc(var(--ew) * .14); height: calc(var(--ew) * .14);
-  border: 4px solid var(--eye); border-radius: 50%;
-}
-
-/* ---------- Enfeites ---------- */
+/* enfeites e animações do #eyes */
 #sym {
-  position: absolute; left: 50%; top: -48%;
-  transform: translateX(-50%);
-  font-size: calc(var(--ew) * .5);
-  display: none; font-style: normal;
+  position: absolute; left: 50%; top: -48%; transform: translateX(-50%);
+  font-size: calc(var(--ew) * .5); display: none; font-style: normal;
 }
 body[data-m=angry] #sym { display: block; }
-
-.bl {
-  position: absolute; bottom: -14%;
-  width: calc(var(--ew) * .5); height: calc(var(--ew) * .2);
-  background: #ff8fb3; border-radius: 50%;
-  opacity: 0; transition: opacity .3s;
-}
-.bl.a { left: -8%; }
-.bl.b { right: -8%; }
-body[data-m=happy] .bl, body[data-m=carinho] .bl { opacity: .55; }
-
 #acc { display: none; position: absolute; pointer-events: none; font-style: normal; }
-
-/* ---------- Expressões ---------- */
-body[data-m=happy] .eye  { --ht: 52%; }
-body[data-m=angry] .eye  { --lt: 55%; --lr: 24deg; background-color: #ffb3b3; }
-body[data-m=sad] .eye,
-body[data-m=cry]  .eye   { --lt: 50%; --lr: -22deg; background-color: #b9c9ff; }
-body[data-m=cry] .eye    { --lt: 58%; }
-body[data-m=sleepy] .eye { --lt: 62%; }
-body[data-m=curious] .eye { transform: scale(1.1); }
-body[data-m=scared] .eye  { transform: scale(.85); background-color: #e8e4ff; }
-body[data-m=surprised] .eye { transform: scale(1.18); }
-body[data-m=bored] .eye  { --lt: 40%; }
-body[data-m=sick] .eye   { --lt: 48%; background-color: #cfe8d0; }
-body[data-m=dance] .eye  { --ht: 52%; }
-body[data-m=tickle] .eye { --ht: 52%; }
 body[data-m=curious] #eyes { animation: around 2.4s ease-in-out infinite; }
 body[data-m=scared] #eyes  { animation: trem .1s infinite; }
-body[data-m=carinho] .eye  {
-  background: transparent;
-  display: flex; align-items: center; justify-content: center;
-  font-size: var(--ew); animation: beat .6s infinite;
-}
-body[data-m=carinho] .eye::before,
-body[data-m=carinho] .eye::after,
-body[data-m=dizzy]   .eye::before,
-body[data-m=dizzy]   .eye::after { display: none; }
-body[data-m=dizzy] .eye {
-  animation: spin .5s linear infinite;
-  background: repeating-radial-gradient(circle, #f7d9e4 0 6px, #000 6px 12px);
-}
 #eyes.wig { animation: wig .15s infinite; }
 
 /* ---------- UI ---------- */
