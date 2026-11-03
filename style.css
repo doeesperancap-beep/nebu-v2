@@ -37,7 +37,11 @@ html, body {
   overflow: visible; pointer-events: none;
 }
 
-.sq { transform-origin: 836px 440px; }
+.sq {
+  transform-origin: 836px 440px;
+  transform: scale(var(--px, 1), var(--py, 1));
+  transition: transform .12s ease-out;
+}
 .eg { transform-origin: 836px 375px; transition: opacity .3s, transform .4s; }
 #eyes.olhos-escondidos .eg { opacity: 0; transform: scaleY(.1); }
 
@@ -1976,4 +1980,37 @@ body[data-m=scared] #eyes  { animation: trem .1s infinite; }
   animation: moedaSobe 1.6s ease-out forwards;
   max-width: 80vw;
   text-align: center;
+}
+
+/* ---------- Piscadinha (toque no olho) ---------- */
+.cc {
+  opacity: 0; transform: scale(.8);
+  transform-box: fill-box; transform-origin: 50% 50%;
+  transition: opacity .35s ease, transform .5s cubic-bezier(.34,1.56,.64,1);
+}
+.mo-c { stroke-width: 16; }
+
+body[data-m=wink] .mo-v,
+body[data-m=cheeks] .mo-c { opacity: 1; transform: scale(1); }
+
+/* olho esquerdo piscando: direito fica redondo */
+body[data-m=wink]:is([data-w=l],[data-w=b]) .dl { opacity: 0; transform: scale(.75); }
+body[data-m=wink]:is([data-w=l],[data-w=b]) .ag-l { opacity: 1; transform: scale(1); }
+body[data-m=wink][data-w=l] .dr { opacity: 0; transform: scale(.75); }
+body[data-m=wink][data-w=l] .cc-r { opacity: 1; transform: scale(1); }
+
+/* olho direito piscando: esquerdo fica redondo */
+body[data-m=wink]:is([data-w=r],[data-w=b]) .dr { opacity: 0; transform: scale(.75); }
+body[data-m=wink]:is([data-w=r],[data-w=b]) .ag-r { opacity: 1; transform: scale(1); }
+body[data-m=wink][data-w=r] .dl { opacity: 0; transform: scale(.75); }
+body[data-m=wink][data-w=r] .cc-l { opacity: 1; transform: scale(1); }
+
+/* ---------- Pinça nas bochechas ---------- */
+body[data-m=cheeks] .sq { transition-duration: .06s; }
+body .sq.solta { animation: solta .75s cubic-bezier(.3, 1.4, .5, 1) !important; }
+@keyframes solta {
+  0%   { transform: scale(var(--rx, 1), var(--ry, 1)); }
+  35%  { transform: scale(1.07, .92); }
+  65%  { transform: scale(.97, 1.04); }
+  100% { transform: scale(1, 1); }
 }
