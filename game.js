@@ -1204,19 +1204,349 @@ function infoComida(f) {
   return null;
 }
 
+/* ============ COMER: arrastar até a boca ============ */
+const LN = 'stroke="#5d4f9e" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"';
+const VAPOR = '<path d="M36 24Q31 16 37 10M50 24Q45 14 51 6M64 24Q59 16 65 12" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".7"/>';
+const NB = { '🍒': 2, '🫐': 3, '🍬': 2, '🍇': 3, '🍕': 5, '🍔': 5, '🍰': 5, '🎂': 5, '🥗': 5 };
+const TORTAS = { '🫐': '#6c7bd9', '🍎': '#ffb347', '🎃': '#ff9f43' };
+
+const torta = f =>
+  `<path d="M50 94L6 30Q50 4 94 30Z" fill="#e8b36b" ${LN}/>` +
+  `<path d="M50 82L16 34Q50 14 84 34Z" fill="${f}"/>` +
+  `<path d="M6 30Q50 4 94 30L90 40Q50 16 10 40Z" fill="#f1c27d" ${LN}/>` +
+  `<circle cx="44" cy="52" r="4" fill="#fff" opacity=".5"/><circle cx="58" cy="62" r="3" fill="#fff" opacity=".5"/>`;
+
+const DES = {
+  /* ---- frutas e saudáveis ---- */
+  '🍎': { c: '#ff6b81', s: `<path d="M50 30C34 14 10 28 14 56C18 80 36 94 50 86C64 94 82 80 86 56C90 28 66 14 50 30Z" fill="#ff6b81" ${LN}/><path d="M50 30Q50 16 56 8" fill="none" ${LN}/><path d="M56 18Q70 6 80 14Q68 26 56 18Z" fill="#7bc47f" ${LN}/><path d="M26 44Q28 36 34 34" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".6"/>` },
+  '🍓': { c: '#ff5c7a', s: `<path d="M50 92C22 76 8 50 16 34C26 22 40 30 50 28C60 30 74 22 84 34C92 50 78 76 50 92Z" fill="#ff5c7a" ${LN}/><path d="M32 28L38 12L50 22L62 12L68 28Q50 36 32 28Z" fill="#7bc47f" ${LN}/><g fill="#ffe08a"><ellipse cx="34" cy="48" rx="2.5" ry="4"/><ellipse cx="52" cy="46" rx="2.5" ry="4"/><ellipse cx="68" cy="50" rx="2.5" ry="4"/><ellipse cx="42" cy="64" rx="2.5" ry="4"/><ellipse cx="60" cy="66" rx="2.5" ry="4"/><ellipse cx="51" cy="80" rx="2.5" ry="4"/></g>` },
+  '🥭': { c: '#ffb347', s: `<path d="M20 68C8 42 28 12 58 16C86 20 94 52 74 78C56 96 30 90 20 68Z" fill="#ffb347" ${LN}/><path d="M56 16Q56 4 70 4Q68 16 56 16Z" fill="#7bc47f" ${LN}/><path d="M28 56Q30 42 40 34" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" opacity=".5"/>` },
+  '🍉': { c: '#ff6b81', s: `<path d="M6 34A44 48 0 0 0 94 34Z" fill="#7bc47f" ${LN}/><path d="M13 34A37 40 0 0 0 87 34Z" fill="#ff6b81"/><path d="M6 34H94" ${LN}/><g fill="#3b2f3f"><ellipse cx="34" cy="48" rx="3" ry="5" transform="rotate(-20 34 48)"/><ellipse cx="50" cy="58" rx="3" ry="5"/><ellipse cx="66" cy="48" rx="3" ry="5" transform="rotate(20 66 48)"/><ellipse cx="42" cy="70" rx="3" ry="5"/><ellipse cx="60" cy="72" rx="3" ry="5"/></g>` },
+  '🍒': { c: '#e63950', s: `<path d="M30 70Q36 34 62 12M72 72Q72 34 62 12" fill="none" stroke="#5d9c59" stroke-width="4" stroke-linecap="round"/><circle cx="30" cy="74" r="17" fill="#e63950" ${LN}/><circle cx="72" cy="76" r="17" fill="#e63950" ${LN}/><path d="M62 12Q76 6 84 14Q72 22 62 12Z" fill="#7bc47f" ${LN}/><circle cx="24" cy="68" r="4" fill="#fff" opacity=".6"/><circle cx="66" cy="70" r="4" fill="#fff" opacity=".6"/>` },
+  '🫐': { c: '#6c7bd9', s: `<circle cx="38" cy="56" r="27" fill="#6c7bd9" ${LN}/><circle cx="70" cy="66" r="20" fill="#7e8cec" ${LN}/><path d="M38 50L33 44L38 42L43 44Z" fill="#4a56b0"/><path d="M70 62L66 57L70 55L74 57Z" fill="#4a56b0"/><circle cx="29" cy="48" r="5" fill="#fff" opacity=".5"/>` },
+  '🍇': { c: '#9b6bd6', s: `<path d="M50 26Q52 12 62 8" fill="none" ${LN}/><path d="M56 14Q70 4 80 12Q68 22 56 14Z" fill="#7bc47f" ${LN}/><g fill="#9b6bd6" ${LN}><circle cx="36" cy="40" r="14"/><circle cx="62" cy="40" r="14"/><circle cx="26" cy="60" r="14"/><circle cx="50" cy="60" r="14"/><circle cx="74" cy="60" r="14"/><circle cx="38" cy="80" r="14"/><circle cx="62" cy="80" r="14"/></g><g fill="#fff" opacity=".5"><circle cx="31" cy="35" r="3"/><circle cx="57" cy="35" r="3"/><circle cx="21" cy="55" r="3"/><circle cx="45" cy="55" r="3"/></g>` },
+  '🥒': { c: '#5fae5f', s: `<circle cx="50" cy="50" r="40" fill="#5fae5f" ${LN}/><circle cx="50" cy="50" r="33" fill="#cfeec0"/><g fill="#9bd18a"><ellipse cx="50" cy="38" rx="4" ry="7"/><ellipse cx="38" cy="54" rx="4" ry="7" transform="rotate(-50 38 54)"/><ellipse cx="62" cy="54" rx="4" ry="7" transform="rotate(50 62 54)"/><ellipse cx="50" cy="64" rx="4" ry="6"/></g>` },
+  '🥗': { c: '#7bc47f', s: `<path d="M16 52Q8 30 30 26Q36 12 52 20Q70 10 80 28Q96 36 84 52Z" fill="#7bc47f" ${LN}/><circle cx="40" cy="38" r="8" fill="#ff6b81" ${LN}/><circle cx="64" cy="40" r="6" fill="#ffb347" ${LN}/><path d="M50 30Q56 24 62 30" fill="none" stroke="#cfeec0" stroke-width="4" stroke-linecap="round"/><path d="M10 50Q12 88 50 88Q88 88 90 50Z" fill="#f5e8f0" ${LN}/>` },
+  '🍣': { c: '#ff9e7a', s: `<rect x="14" y="48" width="72" height="38" rx="16" fill="#fff" ${LN}/><rect x="40" y="48" width="20" height="38" fill="#3b3a4a"/><path d="M10 56Q12 26 50 22Q88 26 90 56Q50 66 10 56Z" fill="#ff9e7a" ${LN}/><path d="M30 34Q34 44 28 54M50 28Q54 42 48 58M70 34Q74 44 68 54" fill="none" stroke="#ffd1c0" stroke-width="3" stroke-linecap="round"/>` },
+
+  /* ---- líquidos (liq = suga; tip = ponta que vai na boca; rng = quanto o nível desce) ---- */
+  '🍵': { c: '#c9e8a0', liq: true, tip: [48, 32], rng: 48, s: `<path d="M24 34H72V68Q72 90 48 90Q24 90 24 68Z" fill="#fff" ${LN}/><clipPath id="c§"><path d="M27 38H69V68Q69 87 48 87Q27 87 27 68Z"/></clipPath><g clip-path="url(#c§)"><g class="liq"><rect x="0" y="40" width="100" height="60" fill="#c9e8a0"/></g></g><path d="M72 44Q92 44 90 60Q88 74 70 72" fill="none" ${LN}/>${VAPOR}` },
+  '🧋': { c: '#e6c9a8', liq: true, tip: [62, 6], rng: 50, s: `<path d="M26 30H74L67 90Q50 94 33 90Z" fill="#fff" ${LN}/><clipPath id="c§"><path d="M29 36H71L65 87Q50 91 35 87Z"/></clipPath><g clip-path="url(#c§)"><g class="liq"><rect x="0" y="38" width="100" height="60" fill="#e6c9a8"/></g><g fill="#5b3a2a"><circle cx="40" cy="80" r="5"/><circle cx="52" cy="82" r="5"/><circle cx="62" cy="78" r="5"/><circle cx="46" cy="72" r="5"/><circle cx="57" cy="70" r="5"/></g></g><rect x="23" y="24" width="54" height="8" rx="4" fill="#ffd1e0" ${LN}/><path d="M50 60L62 6" stroke="#ff8fb3" stroke-width="7" stroke-linecap="round" fill="none"/>` },
+  '🍲': { c: '#ffcf6b', liq: true, tip: [50, 46], rng: 38, s: `<path d="M10 44H90Q88 88 50 90Q12 88 10 44Z" fill="#f7d9e4" ${LN}/><clipPath id="c§"><path d="M14 48H86Q84 84 50 86Q16 84 14 48Z"/></clipPath><g clip-path="url(#c§)"><g class="liq"><rect x="0" y="48" width="100" height="60" fill="#ffcf6b"/><circle cx="34" cy="57" r="5" fill="#ff9f43"/><circle cx="58" cy="61" r="4" fill="#7bc47f"/><circle cx="72" cy="55" r="5" fill="#ff9f43"/></g></g>${VAPOR}` },
+  '☕': { c: '#b98a63', liq: true, tip: [46, 34], rng: 44, s: `<path d="M22 36H70V70Q70 90 46 90Q22 90 22 70Z" fill="#d8c4ec" ${LN}/><clipPath id="c§"><path d="M25 40H67V70Q67 87 46 87Q25 87 25 70Z"/></clipPath><g clip-path="url(#c§)"><g class="liq"><rect x="0" y="44" width="100" height="60" fill="#b98a63"/><path d="M24 44Q35 36 46 44T68 44V52H24Z" fill="#fff5e0"/></g></g><path d="M70 46Q90 46 88 62Q86 76 68 74" fill="none" ${LN}/>${VAPOR}` },
+  '🥤': { c: '#ffb3cc', liq: true, tip: [68, 4], rng: 50, s: `<path d="M26 34H74L67 90Q50 94 33 90Z" fill="#fff" ${LN}/><clipPath id="c§"><path d="M29 38H71L65 87Q50 91 35 87Z"/></clipPath><g clip-path="url(#c§)"><g class="liq"><rect x="0" y="40" width="100" height="60" fill="#ffb3cc"/></g></g><path d="M26 34Q20 20 34 20Q34 8 48 12Q58 4 68 14Q82 16 74 34Z" fill="#fff" ${LN}/><circle cx="38" cy="14" r="6" fill="#e63950" ${LN}/><path d="M54 44L68 4" stroke="#8fd3ff" stroke-width="7" stroke-linecap="round" fill="none"/>` },
+
+  /* ---- industrializados ---- */
+  '🍞': { c: '#f1c27d', s: `<path d="M20 34Q22 14 50 14Q78 14 80 34Q94 40 86 54V86H14V54Q6 40 20 34Z" fill="#f1c27d" ${LN}/><path d="M26 40Q27 24 50 24Q73 24 74 40Q84 44 78 54V78H22V54Q16 44 26 40Z" fill="#ffe3b0"/>` },
+  '🍕': { c: '#ffcf6b', s: `<path d="M50 94L8 26Q50 2 92 26Z" fill="#ffcf6b" ${LN}/><path d="M8 26Q50 2 92 26L88 36Q50 14 12 36Z" fill="#e8a54b" ${LN}/><circle cx="40" cy="48" r="8" fill="#e63950" ${LN}/><circle cx="62" cy="50" r="7" fill="#e63950" ${LN}/><circle cx="50" cy="70" r="6" fill="#e63950" ${LN}/>` },
+  '🍔': { c: '#e8a54b', s: `<path d="M12 48Q12 12 50 12Q88 12 88 48Z" fill="#e8a54b" ${LN}/><g fill="#fff0c8"><ellipse cx="34" cy="26" rx="4" ry="2.5" transform="rotate(-20 34 26)"/><ellipse cx="52" cy="20" rx="4" ry="2.5"/><ellipse cx="66" cy="30" rx="4" ry="2.5" transform="rotate(20 66 30)"/><ellipse cx="44" cy="36" rx="4" ry="2.5"/></g><path d="M8 50Q16 42 24 50Q32 42 40 50Q48 42 56 50Q64 42 72 50Q80 42 92 50V56H8Z" fill="#7bc47f" ${LN}/><rect x="10" y="56" width="80" height="14" rx="7" fill="#8b5a3c" ${LN}/><path d="M12 74H88V80Q88 92 50 92Q12 92 12 80Z" fill="#e8a54b" ${LN}/>` },
+  '🧇': { c: '#f1c27d', s: `<rect x="12" y="12" width="76" height="76" rx="14" fill="#f1c27d" ${LN}/><path d="M38 14V86M62 14V86M14 38H86M14 62H86" stroke="#d9964a" stroke-width="4"/><rect x="38" y="38" width="24" height="24" rx="4" fill="#ffe36b" ${LN}/>` },
+  '🥞': { c: '#f1c27d', s: `<path d="M12 60V72Q12 84 50 84Q88 84 88 72V60Z" fill="#e8b36b" ${LN}/><ellipse cx="50" cy="60" rx="38" ry="12" fill="#f1c27d" ${LN}/><path d="M12 46V58Q12 70 50 70Q88 70 88 58V46Z" fill="#e8b36b" ${LN}/><ellipse cx="50" cy="46" rx="38" ry="12" fill="#f1c27d" ${LN}/><path d="M12 32V44Q12 56 50 56Q88 56 88 44V32Z" fill="#e8b36b" ${LN}/><ellipse cx="50" cy="32" rx="38" ry="12" fill="#f1c27d" ${LN}/><path d="M22 30Q50 20 78 30Q82 42 74 42Q72 52 66 42Q50 46 34 42Q28 50 26 40Q16 40 22 30Z" fill="#c1773a"/><rect x="40" y="20" width="20" height="12" rx="3" fill="#ffe36b" ${LN}/>` },
+  '🍟': { c: '#ffd86b', s: `<g fill="#ffd86b" ${LN}><rect x="24" y="14" width="11" height="56" rx="4"/><rect x="35" y="6" width="11" height="60" rx="4"/><rect x="46" y="12" width="11" height="58" rx="4"/><rect x="57" y="8" width="11" height="62" rx="4"/><rect x="68" y="18" width="11" height="52" rx="4"/></g><path d="M22 54H78L70 94H30Z" fill="#ff6b81" ${LN}/><circle cx="50" cy="74" r="9" fill="#ffe36b"/>` },
+  '🌭': { c: '#e8b36b', s: `<rect x="6" y="40" width="88" height="34" rx="17" fill="#e8b36b" ${LN}/><rect x="2" y="32" width="96" height="18" rx="9" fill="#d9534f" ${LN}/><path d="M10 41Q18 34 26 41T42 41T58 41T74 41T90 41" fill="none" stroke="#ffd86b" stroke-width="4" stroke-linecap="round"/>` },
+  '🌮': { c: '#f1c27d', s: `<path d="M12 42Q14 26 26 30Q32 18 44 28Q54 16 64 28Q78 22 82 34Q92 36 88 42Z" fill="#7bc47f" ${LN}/><circle cx="38" cy="32" r="6" fill="#e63950" ${LN}/><path d="M56 42L66 30L76 42Z" fill="#ffd86b" ${LN}/><path d="M6 40A44 44 0 0 0 94 40Z" fill="#f1c27d" ${LN}/><g fill="#d9964a"><circle cx="30" cy="58" r="3"/><circle cx="50" cy="70" r="3"/><circle cx="70" cy="58" r="3"/></g>` },
+
+  /* ---- doces ---- */
+  '🍬': { c: '#ff8fb3', s: `<path d="M26 50L6 34V66Z" fill="#ffb3cc" ${LN}/><path d="M74 50L94 34V66Z" fill="#ffb3cc" ${LN}/><ellipse cx="50" cy="50" rx="26" ry="20" fill="#ff8fb3" ${LN}/><path d="M38 34Q32 50 38 66M52 31Q46 50 52 69M64 34Q58 50 64 66" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>` },
+  '🍭': { c: '#ff8fb3', s: `<rect x="46" y="52" width="8" height="42" rx="4" fill="#fff" ${LN}/><circle cx="50" cy="36" r="30" fill="#ff8fb3" ${LN}/><circle cx="50" cy="36" r="20" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="30 14"/><circle cx="50" cy="36" r="9" fill="none" stroke="#fff" stroke-width="5"/>` },
+  '🍪': { c: '#d9964a', s: `<path d="M50 8C70 6 92 24 92 50C92 76 72 94 50 92C26 94 8 74 8 50C8 26 28 10 50 8Z" fill="#d9964a" ${LN}/><g fill="#7a4a2a"><path d="M30 30L42 26L44 38L32 40Z"/><ellipse cx="64" cy="36" rx="8" ry="6"/><ellipse cx="36" cy="62" rx="7" ry="6"/><path d="M58 60L72 58L70 72L56 72Z"/><ellipse cx="50" cy="48" rx="4" ry="3"/><ellipse cx="76" cy="54" rx="3" ry="3"/></g>` },
+  '🍫': { c: '#7a4a2a', s: `<rect x="18" y="10" width="64" height="80" rx="9" fill="#7a4a2a" ${LN}/><path d="M50 10V90M18 36H82M18 62H82" stroke="#9a6a45" stroke-width="3"/><path d="M18 10H82V28Q50 38 18 28Z" fill="#ffd86b" ${LN}/>` },
+  '🧊': { c: '#8fd3ff', s: `<path d="M26 56H74L66 92H34Z" fill="#fff" ${LN}/><path d="M38 64V86M50 64V86M62 64V86" stroke="#ff8fb3" stroke-width="3" stroke-linecap="round"/><path d="M18 58Q18 18 50 16Q82 18 82 58Q50 66 18 58Z" fill="#8fd3ff" ${LN}/><path d="M24 50Q34 40 44 50T64 48T78 50" fill="none" stroke="#ff8fb3" stroke-width="6" stroke-linecap="round"/>` },
+  '🍰': { c: '#ffe0ec', s: `<rect x="14" y="44" width="72" height="42" rx="6" fill="#ffe0ec" ${LN}/><rect x="14" y="62" width="72" height="8" fill="#ff8fb3"/><path d="M14 46Q14 34 28 36Q34 28 46 34Q56 26 68 34Q80 30 86 42V48H14Z" fill="#fff" ${LN}/><circle cx="50" cy="24" r="10" fill="#ff5c7a" ${LN}/><path d="M44 16L50 10L56 16Z" fill="#7bc47f" ${LN}/>` },
+  '🎂': { c: '#ffe0ec', s: `<rect x="12" y="56" width="76" height="34" rx="8" fill="#ffe0ec" ${LN}/><rect x="24" y="34" width="52" height="26" rx="7" fill="#fff" ${LN}/><path d="M12 64Q20 78 28 64T44 64T60 64T76 64T88 64" fill="none" stroke="#ff8fb3" stroke-width="5" stroke-linecap="round"/><rect x="47" y="14" width="6" height="20" rx="2" fill="#8fd3ff" ${LN}/><path d="M50 4Q56 12 50 14Q44 12 50 4Z" fill="#ffb347"/>` },
+  '🍦': { c: '#ff9ec4', s: `<path d="M32 54L50 94L68 54Z" fill="#e8a54b" ${LN}/><path d="M38 62L56 62M42 72L58 72M46 82L54 82" stroke="#c4833a" stroke-width="3" stroke-linecap="round"/><path d="M26 56Q18 40 32 34Q32 20 50 20Q68 20 68 34Q82 40 74 56Q50 66 26 56Z" fill="#ff9ec4" ${LN}/><circle cx="50" cy="14" r="7" fill="#e63950" ${LN}/><circle cx="38" cy="40" r="4" fill="#fff" opacity=".5"/>` },
+  '🍩': { c: '#ff8fb3', s: `<path fill-rule="evenodd" d="M50 10A40 40 0 1 1 49.9 10ZM50 38A12 12 0 1 0 50.1 38Z" fill="#e8a54b" ${LN}/><path fill-rule="evenodd" d="M50 16A34 34 0 1 1 49.9 16ZM50 38A12 12 0 1 0 50.1 38Z" fill="#ff8fb3"/><g stroke-width="4" stroke-linecap="round"><path d="M30 34L36 38" stroke="#fff"/><path d="M66 30L62 36" stroke="#8fd3ff"/><path d="M72 56L66 58" stroke="#ffe36b"/><path d="M34 70L40 66" stroke="#b8dfd0"/><path d="M56 78L54 72" stroke="#fff"/></g>` },
+  '🧁': { c: '#ff8fb3', s: `<path d="M24 56H76L68 92H32Z" fill="#b8dfd0" ${LN}/><path d="M38 60L40 88M50 60V90M62 60L60 88" stroke="#fff" stroke-width="3" opacity=".7"/><path d="M20 58Q16 44 30 42Q28 30 44 30Q50 14 62 28Q76 28 72 42Q86 46 80 58Z" fill="#ff8fb3" ${LN}/><circle cx="52" cy="18" r="7" fill="#e63950" ${LN}/>` },
+  '🍮': { c: '#ffcf6b', s: `<ellipse cx="50" cy="86" rx="40" ry="8" fill="#f5e8f0" ${LN}/><path d="M22 84L30 40H70L78 84Z" fill="#ffcf6b" ${LN}/><path d="M28 50Q28 30 50 30Q72 30 72 50Q50 58 28 50Z" fill="#b7691c" ${LN}/><path d="M34 52Q36 62 40 54M60 54Q62 64 66 52" fill="none" stroke="#b7691c" stroke-width="4" stroke-linecap="round"/>` },
+  '🌸': { c: '#f2c9a0', s: `<g fill="#f2c9a0" ${LN}><circle cx="50" cy="24" r="17"/><circle cx="75" cy="43" r="17"/><circle cx="66" cy="73" r="17"/><circle cx="34" cy="73" r="17"/><circle cx="25" cy="43" r="17"/></g><circle cx="50" cy="50" r="14" fill="#d9a066" ${LN}/>` }
+};
+
+const uidFn = () => 'cf' + Math.random().toString(36).slice(2, 8);
+
+function desenhoComida(e, caseiro) {
+  if (caseiro && TORTAS[e]) return { c: TORTAS[e], s: torta(TORTAS[e]) };
+  return DES[e] || { c: '#f7d9e4', s: `<text x="50" y="74" font-size="72" text-anchor="middle">${e}</text>` };
+}
+
+/* Miniatura (usada na bandeja) */
+function miniComida(e, caseiro) {
+  const d = desenhoComida(e, caseiro);
+  return `<svg viewBox="-4 -6 108 112" width="100%" height="100%" style="overflow:visible">${d.s.replaceAll('§', uidFn())}</svg>`;
+}
+
+function montarComida(d, uid) {
+  return `<svg viewBox="0 0 100 100" width="100%" height="100%" style="overflow:visible">
+    <defs><mask id="m${uid}" maskUnits="userSpaceOnUse" x="-60" y="-60" width="220" height="220">
+      <rect x="-60" y="-60" width="220" height="220" fill="#fff"/><g class="bites"></g>
+    </mask></defs>
+    <g mask="url(#m${uid})">${d.s.replaceAll('§', uid)}</g></svg>`;
+}
+
+/* ---------- posições ---------- */
+let comida = null;
+const rostoSvg = () => document.querySelector('#eyes svg');
+
+function posBoca() {
+  const r = rostoSvg().getBoundingClientRect();
+  return { x: r.left + r.width * 835 / 1672, y: r.top + r.height * 570 / 941, raio: r.width * 0.16 };
+}
+function pontaComida() {
+  const t = comida.d.tip || [50, 50];
+  return { x: comida.x + (t[0] - 50) / 100 * comida.lado, y: comida.y + (t[1] - 50) / 100 * comida.lado };
+}
+function estadoBoca() {
+  const m = posBoca(), p = pontaComida();
+  const d = Math.hypot(p.x - m.x, p.y - m.y);
+  return d < m.raio ? 'dentro' : d < m.raio * 2.4 ? 'perto' : 'longe';
+}
+function posicionarComida() {
+  const c = comida;
+  c.el.style.left = (c.x - c.lado / 2) + 'px';
+  c.el.style.top = (c.y - c.lado / 2) + 'px';
+}
+
+/* ---------- efeitos ---------- */
+function somMordida() {
+  SOM.nota(150 + Math.random() * 50, 0.09, 'square', 0.07);
+  setTimeout(() => SOM.nota(260 + Math.random() * 60, 0.05, 'triangle', 0.08), 90);
+}
+function migalhas(cor) {
+  const m = posBoca();
+  for (let i = 0; i < 7; i++) {
+    const p = document.createElement('div');
+    const s = 4 + Math.random() * 5;
+    p.style.cssText = `position:fixed;z-index:13;pointer-events:none;border-radius:50%;
+      left:${m.x}px;top:${m.y + 10}px;width:${s}px;height:${s}px;background:${cor};
+      transition:transform .6s ease-out,opacity .6s`;
+    document.body.appendChild(p);
+    requestAnimationFrame(() => {
+      p.style.transform = `translate(${Math.random() * 100 - 50}px,${20 + Math.random() * 50}px) scale(.4)`;
+      p.style.opacity = 0;
+    });
+    setTimeout(() => p.remove(), 650);
+  }
+}
+function apertinho() {
+  const sq = rostoSvg().querySelector('.sq');
+  if (sq) sq.animate(
+    [{ transform: 'scale(1,1)' }, { transform: 'scale(1.06,.92)' }, { transform: 'scale(1,1)' }],
+    { duration: 300, easing: 'ease-out' });
+}
+
+/* Recorta uma mordida (3 círculos) do lado que está virado pra boca */
+function adicionarMordida(k) {
+  const c = comida;
+  const g = c.el.querySelector('.bites');
+  if (!g) return;
+  const ux = Math.cos(c.ang), uy = Math.sin(c.ang), px = -uy, py = ux;
+  const D = 60 - k * 68 / c.total;
+  [-26, 0, 26].forEach((lat, i) => {
+    const dd = D - (i === 1 ? 3 : 0) + (Math.random() * 4 - 2);
+    const l = lat + (Math.random() * 4 - 2);
+    const ci = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    ci.setAttribute('cx', (50 + ux * dd + px * l).toFixed(1));
+    ci.setAttribute('cy', (50 + uy * dd + py * l).toFixed(1));
+    ci.setAttribute('r', (22 + Math.random() * 3).toFixed(1));
+    ci.setAttribute('fill', '#000');
+    g.appendChild(ci);
+  });
+}
+
+function esconderGuardar() {
+  comida.comecou = true;
+  const b = $('comidaX');
+  if (b) b.remove();
+}
+
+/* ---------- mastigar (sólidos) ---------- */
+function morder() {
+  const c = comida;
+  if (!c || c.fim) return;
+  if (!c.comecou) {
+    esconderGuardar();
+    const emoji = c.info.chave;
+    if ((S.detestadas || []).includes(emoji)) say('Eca... 🤢', 1800);
+  }
+  if (c.ang == null) {
+    const m = posBoca();
+    const dx = m.x - c.x, dy = m.y - c.y;
+    c.ang = Math.hypot(dx, dy) < 14 ? -Math.PI / 2 : Math.atan2(dy, dx);
+  }
+  c.mordidas++;
+  adicionarMordida(c.mordidas);
+  somMordida(); migalhas(c.d.c); apertinho(); vib(20);
+  if ((S.favoritas || []).includes(c.info.chave)) { const m = posBoca(); heart(m.x, m.y - 40); }
+  set('chew', 0);
+  if (c.mordidas >= c.total) {
+    c.fim = true;
+    clearTimeout(c.timer);
+    setTimeout(finalizarComida, 450);
+  }
+}
+
+/* ---------- sugar (líquidos) ---------- */
+function sorver() {
+  const c = comida;
+  if (!c || c.fim) return;
+  if (!c.comecou) esconderGuardar();
+  c.tick++;
+  c.nivel = Math.max(0, c.nivel - 0.03);
+  const liq = c.el.querySelector('.liq');
+  if (liq) liq.setAttribute('transform', `translate(0 ${((1 - c.nivel) * c.rng).toFixed(1)})`);
+  if (c.tick % 2 === 0) SOM.nota(280 + (1 - c.nivel) * 420 + Math.random() * 40, 0.1, 'sine', 0.06);
+  set('sip', 0);
+  if (c.nivel <= 0.02) {
+    c.fim = true;
+    clearTimeout(c.timer);
+    SOM.melodia([N.SOL, N.MI], 0.1, 'sine', 0.08);   // glup final
+    setTimeout(finalizarComida, 350);
+  }
+}
+
+function cicloComida() {
+  const c = comida;
+  if (!c || c.fim || c.est !== 'dentro') return;
+  if (c.liq) { sorver(); if (!c.fim) c.timer = setTimeout(cicloComida, 130); }
+  else       { morder(); if (!c.fim) c.timer = setTimeout(cicloComida, 850); }
+}
+
+/* Reage conforme a distância entre a comida e a boca */
+function atualizarBoca() {
+  const c = comida;
+  if (!c || c.auto || c.fim) return;
+  const e = estadoBoca();
+  if (e === c.est) return;
+  c.est = e;
+  clearTimeout(c.timer);
+  if (e === 'dentro') {
+    set(c.liq ? 'sip' : 'nham', 0);
+    c.timer = setTimeout(cicloComida, c.liq ? 250 : 450);
+  } else if (e === 'perto') {
+    set(c.liq ? 'surprised' : 'nham', 0);
+  } else {
+    set(baseMood(), 0);
+  }
+}
+
+/* Soltou o dedo: se estiver na boca, encaixa e ela termina sozinha */
+function soltarComida(e) {
+  const c = comida;
+  if (!c || c.drag !== e.pointerId) return;
+  e.stopPropagation();
+  c.drag = null;
+  c.el.classList.remove('pegando');
+  if (c.est === 'dentro' && !c.fim) {
+    const m = posBoca(), t = c.d.tip || [50, 50];
+    const alvoX = m.x, alvoY = m.y + (c.liq ? 0 : c.lado * 0.18);
+    c.x = alvoX - (t[0] - 50) / 100 * c.lado;
+    c.y = alvoY - (t[1] - 50) / 100 * c.lado;
+    c.el.style.transition = 'left .25s ease-out, top .25s ease-out, transform .25s';
+    posicionarComida();
+    setTimeout(() => { if (comida === c) c.el.style.transition = ''; }, 300);
+    c.auto = true;
+  } else if (c.est !== 'dentro') {
+    c.est = 'longe';
+    set(baseMood(), 0);
+  }
+}
+
+function finalizarComida() {
+  const c = comida;
+  if (!c) return;
+  comida = null;
+  clearTimeout(c.timer);
+  c.el.style.transition = 'transform .3s, opacity .3s';
+  c.el.style.transform = 'scale(.3)';
+  c.el.style.opacity = '0';
+  setTimeout(() => c.el.remove(), 320);
+  gOn = 0;
+  terminarDeComer(c.f, c.info);
+}
+
+function cancelarComida() {
+  const c = comida;
+  if (!c || c.comecou) return;
+  clearTimeout(c.timer);
+  c.el.remove();
+  comida = null;
+  const b = $('comidaX');
+  if (b) b.remove();
+  gOn = 0;
+  set(baseMood(), 0);
+  say('Guardei pra depois! 😊', 2000);
+}
+
+/* ---------- aparece na tela ---------- */
+function mostrarComida(f, info) {
+  const d = desenhoComida(info.chave, info.ehCaseiro);
+  const lado = Math.round(clamp(Math.min(innerWidth, innerHeight) * 0.30, 96, 190));
+  const uid = uidFn();
+  const el = document.createElement('div');
+  el.className = 'comida-drag';
+  el.style.width = el.style.height = lado + 'px';
+  el.innerHTML = montarComida(d, uid);
+  document.body.appendChild(el);
+
+  comida = {
+    f, info, d, el, lado, liq: !!d.liq, nivel: 1, rng: d.rng || 50,
+    total: NB[info.chave] || 4, mordidas: 0, tick: 0, est: 'longe',
+    x: innerWidth / 2, y: innerHeight * 0.70,
+    drag: null, dx: 0, dy: 0, auto: false, fim: false, comecou: false, timer: null, ang: null
+  };
+  posicionarComida();
+  gOn = 1;
+
+  const bx = document.createElement('button');
+  bx.id = 'comidaX';
+  bx.textContent = '↩ Guardar';
+  bx.onclick = cancelarComida;
+  document.body.appendChild(bx);
+
+  say(d.liq ? 'Leva até a minha boca pra eu sugar! 🥤' : 'Arrasta até a minha boca! 😋', 3500);
+
+  el.addEventListener('pointerdown', e => {
+    e.stopPropagation(); e.preventDefault();
+    const k = comida;
+    if (!k || k.auto || k.fim) return;
+    k.drag = e.pointerId;
+    k.dx = e.clientX - k.x; k.dy = e.clientY - k.y;
+    el.setPointerCapture(e.pointerId);
+    el.classList.add('pegando');
+    act();
+  });
+  el.addEventListener('pointermove', e => {
+    const k = comida;
+    if (!k || k.drag !== e.pointerId) return;
+    e.stopPropagation();
+    k.x = clamp(e.clientX - k.dx, 20, innerWidth - 20);
+    k.y = clamp(e.clientY - k.dy, 20, innerHeight - 20);
+    posicionarComida();
+    act();
+    atualizarBoca();
+  });
+  el.addEventListener('pointerup', soltarComida);
+  el.addEventListener('pointercancel', soltarComida);
+}
+
+/* ---------- ponto de entrada (chamado pela bandeja) ---------- */
 function eat(f) {
+  if (comida) return;
   if ((S.estoque[f] || 0) <= 0) {
     say('Não tenho ' + f + ' no estoque... 😢');
     return;
   }
-
   const c = infoComida(f);
   if (!c) { say('Não sei o que é isso... 🤔'); return; }
+  P.classList.remove('on');
+  mostrarComida(f, c);
+}
+
+/* ---------- efeitos de comer (só no fim) ---------- */
+function terminarDeComer(f, c) {
   const emoji = c.chave;
 
-  S.estoque[f] -= 1;
+  S.estoque[f] = (S.estoque[f] || 1) - 1;
   if (S.estoque[f] <= 0) delete S.estoque[f];
-  P.classList.remove('on');
 
   S.fome = clamp(S.fome + 15);
 
@@ -1249,15 +1579,16 @@ function eat(f) {
 
   if (!fav && !det && c.saude >= 2) sufixo = ' ✨';
 
-    if (fav) { fala = falaDe('comeu_fav', fala); sufixo = ''; }
+  if (fav) { fala = falaDe('comeu_fav', fala); sufixo = ''; }
   else if (det) { fala = falaDe('comeu_det', fala); sufixo = ''; }
+
   registrarEvento('comeu ' + emoji + (fav ? ' (favorita)' : det ? ' (detestada, fez cara feia)' : '') + (c.ehCaseiro ? ', feita em casa' : ''));
+  until = 0;
   set(expressao, 2500, fala + sufixo);
   SOM.melodia([N.MI, N.SOL], 0.1, 'triangle', 0.1);
 
   if (c.humor >= 6 && !det) setTimeout(() => heart(innerWidth / 2, innerHeight / 2), 300);
 
-  // 🎁 Bônus de doce caseiro
   if (c.ehCaseiro) {
     let bonus = 30;
     if (fav) bonus += 15;
@@ -1266,6 +1597,7 @@ function eat(f) {
   }
   save();
 }
+
 function foodTray() {
   const temEstoque = Object.keys(S.estoque || {}).filter(f => (S.estoque[f] || 0) > 0);
 
@@ -1288,7 +1620,7 @@ function foodTray() {
       const label = ehCaseiro ? ' (feito em casa)' : '';
       const cor = ehCaseiro ? 'background:#f7d9e4;color:#1b1824' : '';
       return `<button data-f="${f}" style="font-size:20px;padding:12px;display:flex;justify-content:space-between;align-items:center;${cor}">
-        <span>${emoji}${label}</span>
+        <span style="display:flex;align-items:center;gap:8px"><span style="width:34px;height:34px;display:inline-block">${miniComida(emoji, ehCaseiro)}</span>${infoComida(f)?.nome || ''}${label}</span>
         <span style="font-size:12px;opacity:.6">x${qtd}</span>
       </button>`;
     }).join('')
