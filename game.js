@@ -508,7 +508,7 @@ function aplicarVisual() {
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      font-size: calc(var(--ew) * 1.8);
+      font-size: calc(var(--ew) * 3.4);
       z-index: 11;
       pointer-events: none;
       filter: drop-shadow(0 2px 4px rgba(0,0,0,.5));
@@ -524,7 +524,7 @@ function aplicarVisual() {
     }
   } else {
     // Volta ao padrão
-    document.documentElement.style.setProperty('--eye', '#f7d9e4');
+    document.documentElement.style.setProperty('--eye', '#fff0fb');
   }
 
   // 4. Fundo da tela
@@ -549,10 +549,10 @@ set(baseMood(), 0);
 
 /* Piscar */
 (function blink() {
-  const allow = ['neutral', 'happy', 'sad', 'curious'].includes(mood);
-  if (allow) {
-    eyeEls.forEach(e => e.style.setProperty('--blink', .08));
-    setTimeout(() => eyeEls.forEach(e => e.style.setProperty('--blink', 1)), 130);
+  const allow = ['neutral', 'sad', 'curious', 'sleepy', 'bored'].includes(mood);
+  if (allow && !eyes.classList.contains('olhos-escondidos')) {
+    eyes.classList.add('blink');
+    setTimeout(() => eyes.classList.remove('blink'), 140);
   }
   setTimeout(blink, 2200 + Math.random() * 3000);
 })();
