@@ -431,7 +431,7 @@ const VIB = {
   tickle: [30,30,30,30,30]
 };
 const PR = {
-  neutral: 0, dance: 3, bored: 1, sick: 1, sleepy: 1, sad: 1,
+  neutral: 0, wink: 2, cheeks: 3, dance: 3, bored: 1, sick: 1, sleepy: 1, sad: 1,
   happy: 1, curious: 2, carinho: 2, tickle: 2, surprised: 2,
   scared: 3, angry: 3, dizzy: 3, cry: 3
 };
@@ -708,6 +708,7 @@ const ptrs = new Map();
 let sx = null, sy = null, moved = 0, petD = 0, rev = 0, lastDx = 0;
 let lastX = 0, lastY = 0, pinch0 = 0, multi = 0, pinched = 0, tMulti = 0;
 let hold, taps = [], lastAct = Date.now(), stage = 0, tickleCool = 0;
+let duploOlhos = 0, lastPx = 1, lastPy = 1, winkT;
 
 const dist = () => {
   const p = [...ptrs.values()];
@@ -728,17 +729,58 @@ function pet(m, t) {
   }
 }
 
+/* ---- Qual olho foi tocado? 'l', 'r' ou null ---- */
+const eyeSvg = document.querySelector('#eyes svg');
+function eyeAt(x, y) {
+  const r = eyeSvg.getBoundingClientRect();
+  if (!r.width) return null;
+  const vx = (x - r.left) / r.width * 1672;
+  const vy = (y - r.top) / r.height * 941;
+  if (vy < 230 || vy > 520) return null;
+  if (Math.abs(vx - 457) < 190) return 'l';
+  if (Math.abs(vx - 1217) < 190) return 'r';
+  return null;
+}
+
+/* ---- Piscadinha: lado = 'l', 'r' ou 'b' (os dois) ---- */
+function piscadinha(lado) {
+  document.body.dataset.w = lado;
+  set('wink', 1600, rnd(['Hihi 😉', 'Ei! 😜', 'Cosquinha no olhinho! 😆']));
+  SOM.melodia([N.MI, N.SOL], 0.06, 'sine', 0.08);
+  S.humor = clamp(S.humor + 2);
+  clearTimeout(winkT);
+  winkT = setTimeout(() => { delete document.body.dataset.w; }, 1700);
+}
+
+/* ---- Soltou as bochechas: volta elástico ---- */
+function soltarBochechas() {
+  const sq = eyeSvg.querySelector('.sq');
+  eyeSvg.style.setProperty('--rx', lastPx);
+  eyeSvg.style.setProperty('--ry', lastPy);
+  eyeSvg.style.removeProperty('--px');
+  eyeSvg.style.removeProperty('--py');
+  sq.classList.remove('solta');
+  void sq.getBoundingClientRect();
+  sq.classList.add('solta');
+  setTimeout(() => sq.classList.remove('solta'), 800);
+  until = 0;
+  set('happy', 1800, rnd(['Ufa! Que fofo 🥰', 'Hihi, minhas bochechinhas! 💗']));
+  S.humor = clamp(S.humor + 3);
+  SOM.melodia([N.DO, N.MI, N.SOL], 0.06, 'sine', 0.08);
+  lastPx = 1; lastPy = 1;
+}
+
 addEventListener('pointerdown', e => {
   act();
   if (gOn) return;
   if (!permAsked) { permAsked = 1; askPerm().then(startSensors); }
-    if (e.target.closest('button,#estado,#panel,#bar,#doceria,#biblioteca,#cidade,#telaSpa,#tela-foco,#bib-loja-painel,#bib-escolha,#bib-menu')) return;
-  
-  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (e.target.closest('button,#estado,#panel,#bar,#doceria,#biblioteca,#cidade,#telaSpa,#tela-foco,#bib-loja-painel,#bib-escolha,#bib-menu')) return;
+
+  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY, eye: eyeAt(e.clientX, e.clientY) });
   if (ptrs.size === 1) {
     sx = lastX = e.clientX;
     sy = lastY = e.clientY;
-    moved = 0; petD = 0; rev = 0; multi = 0; pinched = 0;
+    moved = 0; petD = 0; rev = 0; multi = 0; pinched = 0; duploOlhos = 0;
     hold = setTimeout(() => {
       if (!moved) {
         const dx = (sx < innerWidth / 2 ? 1 : -1) * 40;
@@ -749,20 +791,31 @@ addEventListener('pointerdown', e => {
   } else {
     clearTimeout(hold);
     multi = 1; tMulti = Date.now(); pinch0 = dist();
+    const olhos = [...ptrs.values()].map(p => p.eye);
+    duploOlhos = (olhos.includes('l') && olhos.includes('r')) ? 1 : 0;
   }
 });
 
 addEventListener('pointermove', e => {
   if (!ptrs.has(e.pointerId)) return;
   act();
-  ptrs.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  ptrs.set(e.pointerId, { ...ptrs.get(e.pointerId), x: e.clientX, y: e.clientY });
 
+  /* ---- PINÇA = apertar / esticar as bochechas ---- */
   if (ptrs.size === 2) {
     const d = dist();
-    if (Math.abs(d - pinch0) > 40) {
+    const base = Math.max(pinch0, 90);
+    if (!pinched && Math.abs(d - pinch0) > 40) {
       pinched = 1;
-      set('scared', 1800, 'Ai! 😨');
-      pinch0 = d;
+      set('cheeks', 0, rnd(['Mmm! Minhas bochechas! 🥺', 'Fof... 😳', 'Aaai, fofo! 😖']));
+      vib([30]);
+    }
+    if (pinched) {
+      const ratio = clamp(d / base, .6, 1.4);
+      lastPx = ratio;                       // <1 aperta (mais estreito), >1 estica (mais largo)
+      lastPy = 1 + (1 - ratio) * .45;       // aperta = mais alto, estica = mais baixo
+      eyeSvg.style.setProperty('--px', lastPx);
+      eyeSvg.style.setProperty('--py', lastPy);
     }
     return;
   }
@@ -781,8 +834,7 @@ addEventListener('pointermove', e => {
     if (Math.abs(dx) > 3) lastDx = dx;
     lastX = e.clientX; lastY = e.clientY;
 
-        
-         if (rev >= 10 && Date.now() > tickleCool) {
+    if (rev >= 10 && Date.now() > tickleCool) {
       rev = 0; wig();
       tickleCool = Date.now() + 2500;
       pet('tickle', 'Hahaha, cócegas! 🤣');
@@ -808,9 +860,15 @@ function up(e) {
 
   if (multi) {
     if (ptrs.size === 0) {
-      if (!pinched && Date.now() - tMulti < 450) {
-        set('sleepy', 4000, 'Zzz... 😴');
-        S.energia = clamp(S.energia + 8);
+      if (pinched) {
+        soltarBochechas();
+      } else if (Date.now() - tMulti < 450) {
+        if (duploOlhos) {
+          piscadinha('b');                       // dois dedos, um em cada olho
+        } else {
+          set('sleepy', 4000, 'Zzz... 😴');
+          S.energia = clamp(S.energia + 8);
+        }
       }
       multi = 0; sx = null; resetLook();
     }
@@ -818,9 +876,13 @@ function up(e) {
   }
 
   if (sx == null) return;
+  const olho = eyeAt(sx, sy);          // qual olho foi tocado (se algum)
   const was = moved;
   sx = null; resetLook();
   if (was) return;
+
+  /* ---- toque num olho = piscadinha só naquele olho ---- */
+  if (olho) { taps = []; piscadinha(olho); return; }
 
   const t = Date.now();
   taps = taps.filter(x => t - x < 1100);
