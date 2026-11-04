@@ -1,0 +1,619 @@
+#observatorio-orion{
+ position:fixed;inset:0;z-index:10000;overflow:hidden;
+ color:#f4edff;font-family:Inter,system-ui,sans-serif;
+ isolation:isolate;user-select:none;-webkit-user-select:none;
+ background:
+ linear-gradient(105deg,#070514b8,#08061899 48%,#060512c7),
+ radial-gradient(ellipse at 23% 54%,#7650b940,transparent 42%),
+ url("https://science.nasa.gov/wp-content/uploads/2023/04/orion-nebula-xlarge_web-jpg.webp") center/cover no-repeat,
+ #090713;
+}
+
+#observatorio-orion:before,
+#observatorio-orion:after{
+ content:"";position:absolute;inset:0;z-index:-1;
+ pointer-events:none;
+}
+
+#observatorio-orion:before{
+ background:
+ radial-gradient(ellipse at 60% 38%,#ad77e82a,transparent 39%),
+ radial-gradient(ellipse at 20% 80%,#3875ad2b,transparent 34%);
+}
+
+#observatorio-orion:after{
+ opacity:.3;
+ background-image:
+ radial-gradient(1px 1px at 12% 18%,#fff 98%,transparent),
+ radial-gradient(1px 1px at 28% 62%,#d9c4ff 98%,transparent),
+ radial-gradient(1px 1px at 72% 22%,#fff 98%,transparent),
+ radial-gradient(1px 1px at 84% 76%,#c8d9ff 98%,transparent);
+ background-size:190px 190px,230px 230px,270px 270px,310px 310px;
+ animation:or-drift 75s linear infinite;
+}
+
+#observatorio-orion *{box-sizing:border-box}
+
+.or-top{
+ position:absolute;z-index:100;top:0;left:0;right:0;
+ height:72px;display:flex;align-items:center;gap:16px;
+ padding:9px 22px;
+ border-bottom:1px solid #d7bcff25;
+ background:#080616cc;
+ backdrop-filter:blur(16px);
+}
+
+.or-brand{
+ display:flex;align-items:center;gap:12px;min-width:270px;
+}
+
+.or-brand>span{
+ width:40px;height:40px;display:grid;place-items:center;
+ border-radius:13px;color:#fff;font-size:25px;
+ background:linear-gradient(145deg,#b98cff5c,#463d813d);
+ border:1px solid #e6d4ff42;
+ box-shadow:0 0 24px #a16fff2e;
+}
+
+.or-brand small{
+ color:#c2acdf;font-size:9px;
+ letter-spacing:.2em;font-weight:700;
+}
+
+.or-brand h1{
+ margin:2px 0 0;font-size:19px;
+}
+
+.or-status{
+ margin-left:auto;display:flex;align-items:center;
+ gap:9px;color:#c6b8dc;font-size:10px;
+}
+
+.or-status i{
+ width:7px;height:7px;border-radius:50%;
+ background:#9be6c0;box-shadow:0 0 12px #6cebaa;
+}
+
+.or-status b{
+ width:1px;height:14px;background:#ddccff33;
+}
+
+#or-exit{
+ border:1px solid #dcc9ff3b;border-radius:22px;
+ padding:8px 13px;color:#e9ddff;
+ background:#ffffff12;cursor:pointer;font-size:12px;
+}
+
+/* JANELAS */
+
+.or-window{
+ position:fixed;z-index:10;
+ display:flex;flex-direction:column;
+ min-width:250px;min-height:160px;
+ overflow:hidden;
+ border:1px solid #ceb5ff45;
+ border-radius:19px;
+ background:linear-gradient(145deg,#120d39e0,#090919e0);
+ box-shadow:
+ 0 18px 70px #0006,
+ 0 0 35px #905fd222,
+ inset 0 1px 0 #ffffff12;
+ backdrop-filter:blur(18px) saturate(125%);
+}
+
+.or-window.dragging{
+ cursor:grabbing;
+ border-color:#e2cdffad;
+ box-shadow:
+ 0 22px 88px #0008,
+ 0 0 44px #b380ff3d;
+ transition:none;
+}
+
+.or-stars{
+ left:2.5vw;top:12vh;
+ width:45vw;height:78vh;
+}
+
+.or-mirror{
+ left:51vw;top:12vh;
+ width:46vw;height:28vh;
+}
+
+.or-code{
+ left:51vw;top:43vh;
+ width:46vw;height:46vh;
+ min-height:210px;
+}
+
+/* CABEÇALHOS ARRASTÁVEIS */
+
+.or-head{
+ flex:0 0 48px;min-height:48px;
+ display:flex;align-items:center;
+ justify-content:space-between;
+ padding:0 14px 0 16px;
+ cursor:grab;touch-action:none;
+ border-bottom:1px solid #d5beff20;
+ background:linear-gradient(90deg,#9367d321,#ffffff04);
+}
+
+.or-head:active{cursor:grabbing}
+
+.or-head>div{
+ display:flex;align-items:center;
+ gap:10px;min-width:0;
+}
+
+.or-head>div>b{
+ width:27px;height:27px;
+ display:grid;place-items:center;
+ border-radius:9px;color:#e2caff;
+ background:#ac7dff21;
+ border:1px solid #ceb1ff33;
+}
+
+.or-head span{
+ font-size:10px;letter-spacing:.14em;
+ font-weight:750;color:#f0e7ff;
+}
+
+.or-head small{
+ display:block;margin-top:3px;
+ color:#9c8ebc;font-size:8px;
+ letter-spacing:.1em;
+}
+
+.or-head em{
+ color:#cbbce485;font-size:8px;
+ font-style:normal;white-space:nowrap;
+}
+
+/* CONSTELAÇÃO 3D */
+
+.or-space{
+ position:relative;flex:1;min-height:0;overflow:hidden;
+ background:
+ radial-gradient(ellipse at 52% 48%,#d1a3ff33,transparent 31%),
+ radial-gradient(ellipse at 43% 57%,#5d73bf2e,transparent 50%),
+ url("https://science.nasa.gov/wp-content/uploads/2023/04/orion-nebula-xlarge_web-jpg.webp")
+ 48% 48%/cover no-repeat,
+ #0a071a;
+}
+
+.or-space:before{
+ content:"";position:absolute;inset:-15%;
+ pointer-events:none;
+ background:
+ radial-gradient(ellipse at 47% 49%,#e7c5ff44,transparent 12%),
+ radial-gradient(ellipse at 34% 43%,#855dca55,transparent 32%),
+ radial-gradient(ellipse at 71% 64%,#4387bf40,transparent 30%);
+ filter:blur(22px);
+ mix-blend-mode:screen;
+ animation:or-cloud 17s ease-in-out infinite alternate;
+}
+
+#or-canvas{
+ position:absolute;inset:0;
+ width:100%;height:100%;z-index:2;
+ cursor:grab;touch-action:none;
+}
+
+#or-canvas:active{cursor:grabbing}
+
+.or-title{
+ position:absolute;left:16px;top:14px;
+ z-index:4;color:#eee1ffc2;
+ font-size:8px;letter-spacing:.16em;
+ pointer-events:none;
+}
+
+.or-title b{
+ font-size:12px;color:#f2dcff;
+ margin-right:7px;
+}
+
+.or-help{
+ position:absolute;z-index:4;
+ left:0;right:0;bottom:10px;
+ text-align:center;color:#e2d6f6a1;
+ font-size:9px;pointer-events:none;
+}
+
+.or-loading{
+ position:absolute;inset:0;z-index:5;
+ display:grid;place-items:center;
+ color:#e2d4f9;font-size:12px;
+ pointer-events:none;background:#07051426;
+}
+
+.or-stars>footer{
+ flex:0 0 32px;
+ display:flex;align-items:center;
+ justify-content:space-between;
+ padding:0 13px;
+ background:#05051280;color:#b6a5ce;
+ font-size:9px;
+}
+
+/* ESPELHAMENTO */
+
+.or-mirror-body{
+ min-height:0;flex:1;
+ display:grid;
+ grid-template-columns:40% minmax(0,1fr);
+ align-items:center;gap:10px;
+ padding:8px 13px;
+}
+
+#or-face{
+ height:100%;min-height:95px;
+ display:flex;align-items:center;
+ justify-content:center;overflow:hidden;
+ border-radius:12px;
+ background:
+ radial-gradient(ellipse at 50% 57%,#b47eff38,transparent 57%),
+ linear-gradient(145deg,#402a673d,#06071538);
+}
+
+.or-face-frame{
+ border:0;width:100%;height:100%;
+ background:transparent;pointer-events:none;
+}
+
+.or-empty{
+ display:flex;flex-direction:column;
+ align-items:center;gap:5px;
+ text-align:center;padding:10px;
+ color:#d7b6ff;font-size:25px;
+}
+
+.or-empty b{
+ font-size:11px;color:#e7d8ff;
+}
+
+.or-empty small{
+ max-width:180px;color:#a99abd;
+ font-size:9px;
+}
+
+.or-meta{min-width:0}
+
+.or-meta>small{
+ color:#b99ae2;font-size:8px;
+ font-weight:750;letter-spacing:.14em;
+}
+
+.or-meta h2{
+ margin:4px 0 5px;
+ font-size:clamp(16px,1.6vw,24px);
+ color:#f5edff;
+ overflow:hidden;text-overflow:ellipsis;
+ white-space:nowrap;
+}
+
+.or-state{
+ display:flex;align-items:center;
+ gap:7px;color:#c8badc;font-size:9px;
+}
+
+#or-online{
+ padding:3px 7px;border-radius:20px;
+ border:1px solid #ffffff26;
+ font-size:8px;font-weight:750;
+}
+
+#or-online.is-online{
+ color:#a8f4c8;background:#35ae691f;
+ border-color:#83eaad59;
+}
+
+#or-online.is-offline{
+ color:#d0b4d9;background:#8b659f1a;
+ border-color:#b790c940;
+}
+
+.or-meta p{
+ margin:7px 0 5px;color:#c8bdd8;
+ font-size:10px;line-height:1.35;
+}
+
+#or-stats{color:#e5d8fa;font-size:8px}
+
+/* CÓDIGO */
+
+.or-codebar{
+ flex:0 0 30px;
+ display:flex;align-items:center;
+ justify-content:space-between;
+ padding:0 13px;color:#cbb9e5;
+ font-size:9px;background:#04071155;
+}
+
+.or-codebar b{
+ overflow:hidden;text-overflow:ellipsis;
+ white-space:nowrap;
+}
+
+.or-codebar small{
+ color:#9285aa;white-space:nowrap;
+ margin-left:8px;
+}
+
+.or-desc{
+ padding:7px 13px 8px;
+ color:#a99abd;font-size:9px;
+ border-bottom:1px solid #dccbff15;
+ line-height:1.4;
+}
+
+.or-code-scroll{
+ flex:1;min-height:0;overflow:auto;
+ overscroll-behavior:contain;
+ background:#04071055;
+ scrollbar-width:thin;
+ scrollbar-color:#b18fe266 transparent;
+ user-select:text;-webkit-user-select:text;
+ touch-action:pan-y;
+}
+
+.or-code-scroll::-webkit-scrollbar{
+ width:7px;height:7px;
+}
+
+.or-code-scroll::-webkit-scrollbar-thumb{
+ background:#b18fe255;border-radius:10px;
+}
+
+#or-code{
+ margin:0;padding:8px 0 12px;
+ color:#d8d2e7;
+ font:11px/1.65 ui-monospace,Consolas,monospace;
+ white-space:pre;min-width:max-content;
+}
+
+.or-line{
+ display:flex;min-height:18px;
+ padding-right:14px;
+}
+
+.or-line.active{
+ background:linear-gradient(90deg,#a679ff40,#a679ff12 70%,transparent);
+ border-left:2px solid #c69bff;
+}
+
+.or-line>i{
+ flex:0 0 48px;padding-right:13px;
+ text-align:right;color:#6f6685;
+ font-style:normal;
+}
+
+.or-line.active>i{color:#d8bbff}
+
+.or-line>span{padding-right:16px}
+
+.or-keyword{color:#c8a1ff;font-style:normal}
+.or-string{color:#aee1c4;font-style:normal}
+.or-comment{color:#7f8caa;font-style:italic}
+
+.or-code>footer{
+ flex:0 0 26px;
+ display:flex;align-items:center;
+ justify-content:space-between;
+ padding:0 13px;
+ background:#05051199;color:#9e8db9;
+ font-size:8px;letter-spacing:.09em;
+}
+
+.or-credit{
+ position:fixed;right:12px;bottom:5px;
+ z-index:2;color:#d5c9e977;font-size:8px;
+}
+
+.or-credit a{color:#e2d1ffab}
+
+/* ANIMAÇÕES */
+
+@keyframes or-cloud{
+ from{
+  transform:translate(-1%,.7%) scale(.98);
+  opacity:.55;
+ }
+ to{
+  transform:translate(1.5%,-1%) scale(1.04);
+  opacity:.95;
+ }
+}
+
+@keyframes or-drift{
+ to{
+  background-position:
+   190px 190px,-230px 230px,
+   270px -270px,-310px -310px;
+ }
+}
+
+/* TELAS MENORES */
+
+@media(max-width:1000px){
+
+ .or-top{
+  height:63px;padding:8px 12px;gap:8px;
+ }
+
+ .or-brand{min-width:185px}
+
+ .or-brand h1{font-size:16px}
+ .or-brand small{font-size:8px}
+ .or-status{font-size:8px;gap:5px}
+
+ .or-stars{
+  left:2vw;top:10vh;
+  width:46vw;height:77vh;
+ }
+
+ .or-mirror{
+  left:51vw;top:10vh;
+  width:47vw;height:30vh;
+ }
+
+ .or-code{
+  left:51vw;top:43vh;
+  width:47vw;height:43vh;
+ }
+
+ .or-head{
+  min-height:41px;
+  flex-basis:41px;padding:0 9px;
+ }
+
+ .or-head span{font-size:9px}
+
+ .or-mirror-body{
+  grid-template-columns:37% minmax(0,1fr);
+  padding:6px 8px;gap:7px;
+ }
+
+ .or-meta p{font-size:9px}
+}
+
+/* CELULAR */
+
+@media(max-width:680px){
+
+ .or-top{
+  height:56px;padding:6px 8px;gap:6px;
+ }
+
+ .or-brand{
+  min-width:0;flex:1;gap:7px;
+ }
+
+ .or-brand>span{
+  width:31px;height:31px;font-size:19px;
+ }
+
+ .or-brand h1{font-size:13px}
+ .or-brand small{font-size:6px;letter-spacing:.12em}
+ .or-status{display:none}
+
+ #or-exit{
+  padding:7px 9px;font-size:10px;
+ }
+
+ .or-window{
+  min-width:0;border-radius:13px;
+ }
+
+ .or-stars{
+  left:2vw;top:8vh;
+  width:96vw;height:42vh;
+ }
+
+ .or-mirror{
+  left:2vw;top:52vh;
+  width:43vw;height:29vh;
+ }
+
+ .or-code{
+  left:47vw;top:52vh;
+  width:51vw;height:40vh;
+ }
+
+ .or-head{
+  min-height:35px;
+  flex-basis:35px;padding:0 7px;
+ }
+
+ .or-head span{
+  font-size:7px;letter-spacing:.08em;
+ }
+
+ .or-head small{font-size:6px}
+
+ .or-head em{font-size:0}
+
+ .or-head em:after{
+  content:"⠿";font-size:14px;
+ }
+
+ .or-title{
+  left:8px;top:8px;font-size:6px;
+ }
+
+ .or-title b{font-size:9px}
+
+ .or-help{
+  font-size:7px;bottom:5px;
+ }
+
+ .or-stars>footer{
+  flex-basis:24px;padding:0 7px;font-size:7px;
+ }
+
+ .or-mirror-body{
+  display:flex;flex-direction:column;
+  gap:3px;padding:4px;
+ }
+
+ #or-face{
+  width:100%;min-height:68px;flex:1;
+ }
+
+ .or-meta{width:100%}
+ .or-meta>small{font-size:6px}
+
+ .or-meta h2{
+  font-size:12px;margin:2px 0;
+ }
+
+ .or-state{
+  font-size:7px;gap:3px;
+ }
+
+ #or-online{
+  font-size:6px;padding:2px 4px;
+ }
+
+ .or-meta p{
+  font-size:7px;margin:3px 0;
+ }
+
+ #or-stats{display:none}
+
+ .or-codebar{
+  flex-basis:24px;padding:0 7px;font-size:7px;
+ }
+
+ .or-codebar small{font-size:6px}
+
+ .or-desc{
+  padding:4px 7px;font-size:7px;
+ }
+
+ #or-code{
+  font-size:8px;line-height:1.5;
+ }
+
+ .or-line>i{
+  flex-basis:33px;padding-right:8px;
+ }
+
+ .or-line{min-height:14px}
+
+ .or-code>footer{
+  flex-basis:20px;padding:0 7px;font-size:6px;
+ }
+
+ .or-credit{
+  left:6px;right:6px;bottom:1px;
+  text-align:center;font-size:6px;
+ }
+}
+
+@media(prefers-reduced-motion:reduce){
+ #observatorio-orion:after,
+ .or-space:before{
+  animation:none!important;
+ }
+}
