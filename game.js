@@ -9,6 +9,90 @@ const FIREBASE_CONFIG = {
 let dbFirebase = null;
 const SALA_TIMEOUT_MS = 90000;   // a Nébula some da sala se ficar 90s sem dar sinal
 
+/* ============ OBSERVATÓRIO: PRESENÇA ============ */
+
+let observatorioAtual = {
+  acao: 'em repouso',
+  codigo: 'expression',
+  detalhe: 'Aguardando interação.'
+};
+
+let observatorioTimer = 0;
+
+function registrarAtividadeObservatorio(acao, codigo, detalhe) {
+  observatorioAtual = {
+    acao: String(acao || 'observando').slice(0, 60),
+    codigo: String(codigo || 'expression').slice(0, 40),
+    detalhe: String(detalhe || '').slice(0, 120)
+  };
+
+  if (
+    typeof S !== 'undefined' &&
+    S.modo === 'nebo' &&
+    S.id && S.nome && S.pers
+  ) {
+    clearTimeout(observatorioTimer);
+    observatorioTimer = setTimeout(publicarEstadoObservatorio, 350);
+  }
+}
+
+async function publicarEstadoObservatorio() {
+  if (
+    typeof S === 'undefined' ||
+    S.modo !== 'nebo' ||
+    !S.id || !S.nome || !S.pers
+  ) return;
+
+  const db = iniciarFirebase();
+  if (!db) return;
+
+  try {
+    await db.collection('nebulas').doc(S.id).set({
+      observatorioOnline: true,
+      observatorioAtualizadoEm: Date.now(),
+
+      observatorio: {
+        acao: observatorioAtual.acao,
+        codigo: observatorioAtual.codigo,
+        detalhe: observatorioAtual.detalhe,
+        expressao: typeof mood === 'string' ? mood : 'neutral',
+        personalidade: S.pers
+      }
+
+    }, { merge: true });
+
+  } catch (e) {
+    console.warn('Observatório: falha ao publicar atividade.', e);
+  }
+}
+
+async function encerrarPresencaObservatorio() {
+  if (typeof S === 'undefined' || !S.id) return;
+
+  const db = iniciarFirebase();
+  if (!db) return;
+
+  try {
+    await db.collection('nebulas').doc(S.id).set({
+      observatorioOnline: false,
+      observatorioAtualizadoEm: Date.now()
+    }, { merge: true });
+
+  } catch (e) {}
+}
+
+setInterval(() => {
+  if (
+    typeof S !== 'undefined' &&
+    S.modo === 'nebo' &&
+    S.id && S.nome && S.pers
+  ) {
+    publicarEstadoObservatorio();
+  }
+}, 30000);
+
+addEventListener('pagehide', encerrarPresencaObservatorio);
+
 function iniciarFirebase() {
   if (dbFirebase) return dbFirebase;
   if (typeof firebase === 'undefined') return null;
@@ -450,6 +534,29 @@ function set(m, ms = 2200, t) {
   clearTimeout(mt);
   mood = m;
   body.dataset.m = m;
+  const mapaObs = {
+  dance: ['dançando', 'dance'],
+  nham: ['comendo', 'food'],
+  chew: ['comendo', 'food'],
+  sip: ['bebendo', 'food'],
+  curious: ['observando algo', 'expression'],
+  bored: ['entediada', 'idle'],
+  sleepy: ['descansando', 'expression'],
+  neutral: ['em repouso', 'expression'],
+  happy: ['sorrindo', 'expression'],
+  carinho: ['demonstrando carinho', 'expression'],
+  surprised: ['surpresa', 'expression'],
+  sick: ['indisposta', 'expression']
+};
+
+const atividadeObs = mapaObs[m] ||
+  ['mudando expressão', 'expression'];
+
+registrarAtividadeObservatorio(
+  atividadeObs[0],
+  atividadeObs[1],
+  'Expressão atual: ' + m
+);
   eyeEls.forEach(e => e.textContent = m === 'carinho' ? '❤️' : '');
   if (t) say(t);
   if (ms && m !== baseMood()) mt = setTimeout(() => set(baseMood(), 0), ms);
@@ -1531,6 +1638,11 @@ function mostrarComida(f, info) {
 /* ---------- ponto de entrada (chamado pela bandeja) ---------- */
 function eat(f) {
   if (comida) return;
+  registrarAtividadeObservatorio(
+  'escolhendo alimento',
+  'food',
+  'Alimento escolhido: ' + f
+);
   if ((S.estoque[f] || 0) <= 0) {
     say('Não tenho ' + f + ' no estoque... 😢');
     return;
@@ -1972,7 +2084,12 @@ function startGame() {
   let fr = [], score = 0, t0 = Date.now(), last = t0;
   gOn = 1;
   c.onpointermove = e => gx = e.clientX / innerWidth;
-
+registrarAtividadeObservatorio(
+  'jogando Cesta de Frutas',
+  'game-frutas',
+  'Minigame de pegar frutas e evitar bolos.'
+);
+  
   const iv = setInterval(() => {
     const n = Date.now(), dt = (n - last) / 1000; last = n;
     x.clearRect(0, 0, c.width, c.height);
@@ -2014,7 +2131,13 @@ function startButterflies() {
   document.body.appendChild(c);
   const x = c.getContext('2d');
   let bf = [], fx = [], score = 0, t0 = Date.now(), last = t0, sp = 0;
+registrarAtividadeObservatorio(
+  'caçando borboletas',
+  'game-borboletas',
+  'Minigame de acompanhar e capturar borboletas.'
+);
 
+  
   c.onpointerdown = e => {
     const i = bf.findIndex(b => Math.hypot(b.x - e.clientX, b.y - e.clientY) < 55);
     if (i >= 0) { fx.push({ x: bf[i].x, y: bf[i].y, t: 0 }); bf.splice(i, 1); score++; vib(20); }
@@ -2072,6 +2195,12 @@ function startBath() {
   // 1. PRIMEIRO: escolher o sabonete
   escolherSabonete();
 }
+
+registrarAtividadeObservatorio(
+  'tomando banho',
+  'bath',
+  'A Nebo está na atividade de banho.'
+);
 
 /* Tela de escolha do sabonete */
 function escolherSabonete() {
@@ -2214,6 +2343,12 @@ function comecarBanho(sabKey) {
   const sab = SABONETES[sabKey];
   if (!sab) return;
 
+registrarAtividadeObservatorio(
+  'ensaboando',
+  'bath',
+  'A Nebo está no banho.'
+);
+  
   const c = document.createElement('canvas');
   c.width = innerWidth;
   c.height = innerHeight;
@@ -2387,6 +2522,12 @@ function startDino() {
   P.classList.remove('on');
   gOn = 1;
 
+registrarAtividadeObservatorio(
+  'pulando bolos',
+  'game-dino',
+  'Minigame de desviar dos bolos.'
+);
+  
   const c = document.createElement('canvas');
   c.width = innerWidth; c.height = innerHeight;
   c.style.cssText = 'position:fixed;inset:0;z-index:8;background:#f5e8d0';
@@ -2867,6 +3008,12 @@ function modoPanel() {
     P.querySelectorAll('[data-modo]').forEach(botao => {
       botao.onclick = () => {
         const modo = botao.dataset.modo;
+        if (
+  modo === 'painel' &&
+  S.id && S.nome && S.pers
+) {
+  encerrarPresencaObservatorio();
+}
         S.modo = modo;
         save();
         P.classList.remove('on');
@@ -2884,19 +3031,30 @@ function iniciarModo() {
     save();
   }
 
-  // Modo Painel: espaço provisório
-  if (S.modo === 'painel') {
-    panel(
-      '<h3>🧩 Modo Painel</h3>' +
-      '<p style="opacity:.7;line-height:1.5">' +
-      'Estamos preparando este espaço. Em breve teremos novidades! ✨' +
-      '</p>' +
-      '<button data-x="voltar-modo">← Voltar à escolha</button>'
-    );
+ // Observatório de Órion.
+if (S.modo === 'painel') {
+  P.classList.remove('on');
 
-    return;
-  }
+  setTimeout(() => {
+    if (typeof window.abrirObservatorioNebo === 'function') {
+      window.abrirObservatorioNebo();
+    } else {
+      console.error('painel.js não foi carregado.');
+    }
+  }, 0);
 
+  return;
+}
+
+if (S.modo === 'nebo' && S.id && S.nome && S.pers) {
+  registrarAtividadeObservatorio(
+    'em repouso',
+    'expression',
+    'Nebo pronta para interagir.'
+  );
+
+  publicarEstadoObservatorio();
+}
   // Modo Nébula
   if (!S.nome) {
     setTimeout(welcomePanel, 400);
@@ -3084,6 +3242,13 @@ S.cidadeId = id;
 save();
 say('Conectada! ✨');
 salvarNoFirebase();   // ← ESSA LINHA NOVA!
+      registrarAtividadeObservatorio(
+  'em repouso',
+  'expression',
+  'Nebo pronta para interagir.'
+);
+
+publicarEstadoObservatorio();
 P.classList.remove('on');
 setTimeout(mundo, 400);
     };
