@@ -1,0 +1,34 @@
+
+#nebo-apresentacao-toggle {
+  position: fixed;
+  top: max(10px, env(safe-area-inset-top));
+  right: max(10px, env(safe-area-inset-right));
+  z-index: 10050;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(220,190,255,.22);
+  border-radius: 50%;
+  background: rgba(20,12,32,.22);
+  color: rgba(255,255,255,.52);
+  font: 18px/1 system-ui;
+  cursor: pointer;
+  opacity: .38;
+  transition: opacity .2s, background .2s;
+}
+
+#nebo-apresentacao-toggle:hover,
+#nebo-apresentacao-toggle:focus-visible {
+  opacity: .95;
+  background: rgba(20,12,32,.82);
+  outline: none;
+}
+
+:fullscreen #nebo-apresentacao-toggle {
+  opacity: .22;
+}
+
+:fullscreen #nebo-apresentacao-toggle:hover {
+  opacity: .95;
+}
