@@ -314,7 +314,7 @@
       status.textContent =
         'Este aparelho não disponibiliza sensores compatíveis.';
 
-      botaoSensores.remove();
+     box.remove();
       return;
     }
 
