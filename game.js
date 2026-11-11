@@ -488,8 +488,9 @@ function aplicarVisual() {
     el.textContent = eq.cabeca;
     el.style.cssText = `
       position: absolute;
-      top: -20px;
-      right: -30px;
+      top: 4px;
+right: 12px;
+transform: rotate(-12deg);
       font-size: calc(var(--ew) * 0.5);
       z-index: 10;
       pointer-events: none;
