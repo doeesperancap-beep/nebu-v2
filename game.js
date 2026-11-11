@@ -2775,9 +2775,7 @@ function mundo() {
       '<button data-x="loja" style="font-size:16px;padding:14px">🛒 Mercado</button>' +
       '<button data-x="boutique" style="font-size:16px;padding:14px">👗 Boutique</button>' +
       '<button data-x="spa" style="font-size:16px;padding:14px">💆 Spa</button>' +
-      '<button data-x="clinica" style="font-size:16px;padding:14px">🏥 Clínica</button>' +
       '<button data-x="biblioteca" style="font-size:16px;padding:14px">📚 Biblioteca</button>' +
-      '<button data-x="jogos" style="font-size:16px;padding:14px">🎮 Jogos</button>' +
       '<button data-x="doceria" style="font-size:16px;padding:14px">🍰 Doceria</button>' +
       '<hr style="border-color:#ffffff20;margin:12px 0">' +
       '<button data-x="desconectar" style="font-size:14px;opacity:.7">🔌 Desconectar</button>'
